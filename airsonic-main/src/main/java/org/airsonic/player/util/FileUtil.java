@@ -22,9 +22,9 @@ package org.airsonic.player.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.*;
+import java.nio.charset.*;
 
 /**
  * Miscellaneous file utility methods.
@@ -165,5 +165,53 @@ public final class FileUtil {
         public String toString() {
             return name + ", " + file;
         }
+    }
+    
+    public static Charset detectCharset(File f, String[] charsets) {
+
+        Charset charset = null;
+
+        for (String charsetName : charsets) {
+            charset = detectCharset(f, Charset.forName(charsetName));
+            if (charset != null) {
+                break;
+            }
+        }
+
+        return charset;
+    }
+
+    private static Charset detectCharset(File f, Charset charset) {
+        try {
+            boolean identified;
+            try (BufferedInputStream input=new BufferedInputStream(new FileInputStream(f)))
+            {
+                CharsetDecoder decoder = charset.newDecoder();
+                decoder.reset();
+                byte[] buffer = new byte[512];
+                identified=false;
+                while ((input.read(buffer) != -1) && (!identified)) {
+                    identified = identify(buffer, decoder);
+                }
+            }
+
+            if (identified) {
+                return charset;
+            } else {
+                return null;
+            }
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static boolean identify(byte[] bytes, CharsetDecoder decoder) {
+        try {
+            decoder.decode(ByteBuffer.wrap(bytes));
+        } catch (CharacterCodingException e) {
+            return false;
+        }
+        return true;
     }
 }
