@@ -394,7 +394,8 @@ public class MediaFileService {
         if (parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()) {
             return;
         }
-
+        
+        LOG.debug("Updating children of {}",parent.getPath());        
         List<MediaFile> storedChildren = mediaFileDao.getChildrenOf(parent.getPath());
         Map<String, MediaFile> storedChildrenMap = new HashMap<String, MediaFile>();
         for (MediaFile child : storedChildren) {
@@ -434,6 +435,7 @@ public class MediaFileService {
     }
 
     private List<MediaFile> createSingleFileAlbumChildren(MediaFile album) {
+        LOG.debug("Creating SingleFileAlbumChildren for {}", album.getPath());
         try {
             List<MediaFile> children = new ArrayList<>();
             for (File cueFile : getCueSheets(album.getFile())) {
@@ -567,6 +569,7 @@ public class MediaFileService {
 
     private MediaFile createMediaFile(File file) {
 
+        LOG.debug("Creating MediaFile for {}", file.getPath());
         MediaFile existingFile = mediaFileDao.getMediaFile(file.getPath());
 
         MediaFile mediaFile = new MediaFile();
