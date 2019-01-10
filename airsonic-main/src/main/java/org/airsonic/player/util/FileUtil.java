@@ -167,18 +167,14 @@ public final class FileUtil {
         }
     }
     
-    public static Charset detectCharset(File f, String[] charsets) {
-
-        Charset charset = null;
-
+    public static String detectCharset(File f, String[] charsets) {
         for (String charsetName : charsets) {
-            charset = detectCharset(f, Charset.forName(charsetName));
+            Charset charset = detectCharset(f, Charset.forName(charsetName));
             if (charset != null) {
-                break;
+                return charset.name();
             }
         }
-
-        return charset;
+        return null;
     }
 
     private static Charset detectCharset(File f, Charset charset) {

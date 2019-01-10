@@ -41,7 +41,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.nio.charset.*;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -453,9 +452,8 @@ public class MediaFileService {
                         wholeFileLength = metaData.getDurationSeconds();
                     }
                     InputStream fin = new FileInputStream(cueFile);
-                    Charset charset = FileUtil.detectCharset(cueFile, textEncodings);
-                    String encoding = charset!=null ? charset.name() : textEncodings[1];
-                    CueSheet cueSheet = CueParser.parse(new LineNumberReader(new InputStreamReader(fin,encoding)));
+                    String charset = FileUtil.detectCharset(cueFile, textEncodings);
+                    CueSheet cueSheet = CueParser.parse(new LineNumberReader(new InputStreamReader(fin, charset!=null ? charset : textEncodings[1])));
                     fin.close();
                     //CueSheet cueSheet = CueParser.parse(cueFile);
                     for (int i = 0; i < cueSheet.getAllTrackData().size(); i++) {
