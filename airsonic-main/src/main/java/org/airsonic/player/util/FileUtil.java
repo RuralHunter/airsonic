@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.util;
 
+import org.apache.commons.io.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,45 +170,22 @@ public final class FileUtil {
     
     public static String detectCharset(File f, String[] charsets) {
         for (String charsetName : charsets) {
-            Charset charset = detectCharset(f, Charset.forName(charsetName));
-            if (charset != null) {
-                return charset.name();
-            }
+            if(canDecode(f, charsetName))
+                return charsetName;
         }
         return null;
     }
 
-    private static Charset detectCharset(File f, Charset charset) {
+    private static boolean canDecode(File f, String charsetName) {
         try {
-            boolean identified;
-            try (BufferedInputStream input=new BufferedInputStream(new FileInputStream(f)))
-            {
-                CharsetDecoder decoder = charset.newDecoder();
-                decoder.reset();
-                byte[] buffer = new byte[512];
-                identified=false;
-                while ((input.read(buffer) != -1) && (!identified)) {
-                    identified = identify(buffer, decoder);
-                }
-            }
-
-            if (identified) {
-                return charset;
-            } else {
-                return null;
-            }
-
+            Charset charset=Charset.forName(charsetName);
+            byte[] buffer=FileUtils.readFileToByteArray(f);
+            CharsetDecoder decoder=charset.newDecoder();
+            decoder.reset();
+            decoder.decode(ByteBuffer.wrap(buffer));
+            return true;
         } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static boolean identify(byte[] bytes, CharsetDecoder decoder) {
-        try {
-            decoder.decode(ByteBuffer.wrap(bytes));
-        } catch (CharacterCodingException e) {
             return false;
         }
-        return true;
     }
 }
