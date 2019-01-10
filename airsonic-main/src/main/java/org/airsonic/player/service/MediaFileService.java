@@ -436,85 +436,80 @@ public class MediaFileService {
 
     private List<MediaFile> createSingleFileAlbumChildren(MediaFile album) {
         LOG.debug("Creating SingleFileAlbumChildren for {}", album.getPath());
-        try {
-            List<MediaFile> children = new ArrayList<>();
-            for (File cueFile : getCueSheets(album.getFile())) {
-                File soundFile = getSoundChild(album.getFile(), cueFile.getPath());
-                if (soundFile != null) {
-                    MetaDataParser parser = metaDataParserFactory.getParser(soundFile);
-                    MetaData metaData = null;
-                    if (parser != null) {
-                        metaData = parser.getMetaData(soundFile);
+        List<MediaFile> children = new ArrayList<>();
+        for (File cueFile : getCueSheets(album.getFile())) {                
+            CueSheet cueSheet = parseCueSheet(cueFile);
+            if(cueSheet == null)
+                continue;
+            File soundFile = getSoundChild(album.getFile(), cueFile.getPath(), cueSheet);
+            if (soundFile != null) {
+                MetaDataParser parser = metaDataParserFactory.getParser(soundFile);
+                MetaData metaData = null;
+                if (parser != null) {
+                    metaData = parser.getMetaData(soundFile);
+                }
+                long wholeFileSize = FileUtil.length(soundFile);
+                int wholeFileLength = 0; //todo: find sound length without metadata
+                if (metaData != null && metaData.getDurationSeconds() !=null) {
+                    wholeFileLength = metaData.getDurationSeconds();
+                }
+                //CueSheet cueSheet = CueParser.parse(cueFile);
+                for (int i = 0; i < cueSheet.getAllTrackData().size(); i++) {
+                    TrackData trackData = cueSheet.getAllTrackData().get(i);
+                    MediaFile mediaFile = new MediaFile();
+                    mediaFile.setMediaType(MediaFile.MediaType.MUSIC_SINGLE_FILE);
+                    mediaFile.setAlbumArtist(cueSheet.getPerformer());
+                    mediaFile.setAlbumName(cueSheet.getTitle());
+                    mediaFile.setTitle(trackData.getTitle());
+                    mediaFile.setArtist(trackData.getPerformer());
+                    mediaFile.setParentPath(album.getPath());
+                    //mediaFile.setParentPath(soundFile.getPath());
+                    Date lastModified = new Date(FileUtil.lastModified(soundFile));
+                    MediaFile existingFile = mediaFileDao.getMediaFile(mediaFile.getPath());
+                    mediaFile.setFolder(securityService.getRootFolderForFile(soundFile));
+                    mediaFile.setChanged(lastModified);
+                    mediaFile.setLastScanned(new Date());
+                    mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
+                    mediaFile.setLastPlayed(existingFile == null ? null : existingFile.getLastPlayed());
+                    mediaFile.setComment(existingFile == null ? null : existingFile.getComment());
+                    mediaFile.setChildrenLastUpdated(new Date(0));
+                    mediaFile.setCreated(lastModified);
+                    mediaFile.setPresent(true);
+                    mediaFile.setTrackNumber(trackData.getNumber());
+
+                    if (metaData != null) {
+                        mediaFile.setDiscNumber(metaData.getDiscNumber());
+                        mediaFile.setGenre(metaData.getGenre());
+                        mediaFile.setYear(metaData.getYear());
+                        mediaFile.setBitRate(metaData.getBitRate());
+                        mediaFile.setVariableBitRate(metaData.getVariableBitRate());
+                        mediaFile.setHeight(metaData.getHeight());
+                        mediaFile.setWidth(metaData.getWidth());
                     }
-                    long wholeFileSize = FileUtil.length(soundFile);
-                    int wholeFileLength = 0; //todo: find sound length without metadata
-                    if (metaData != null && metaData.getDurationSeconds() !=null) {
-                        wholeFileLength = metaData.getDurationSeconds();
+
+                    String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(soundFile.getPath())));
+                    mediaFile.setFormat(format);
+
+                    Position currentPosition = cueSheet.getAllTrackData().get(i).getIndices().get(0).getPosition();
+                    int currentStart = currentPosition.getMinutes() * 60 + currentPosition.getSeconds();
+
+                    int nextStart = 0;
+                    if (cueSheet.getAllTrackData().size() - 1 != i) {
+                        Position nextPosition = cueSheet.getAllTrackData().get(i + 1).getIndices().get(0).getPosition();
+                        nextStart = nextPosition.getMinutes() * 60 + nextPosition.getSeconds();
+                    } else {
+                        nextStart = wholeFileLength;
                     }
-                    InputStream fin = new FileInputStream(cueFile);
-                    String charset = FileUtil.detectCharset(cueFile, textEncodings);
-                    CueSheet cueSheet = CueParser.parse(new LineNumberReader(new InputStreamReader(fin, charset!=null ? charset : textEncodings[1])));
-                    fin.close();
-                    //CueSheet cueSheet = CueParser.parse(cueFile);
-                    for (int i = 0; i < cueSheet.getAllTrackData().size(); i++) {
-                        TrackData trackData = cueSheet.getAllTrackData().get(i);
-                        MediaFile mediaFile = new MediaFile();
-                        mediaFile.setMediaType(MediaFile.MediaType.MUSIC_SINGLE_FILE);
-                        mediaFile.setAlbumArtist(cueSheet.getPerformer());
-                        mediaFile.setAlbumName(cueSheet.getTitle());
-                        mediaFile.setTitle(trackData.getTitle());
-                        mediaFile.setArtist(trackData.getPerformer());
-                        mediaFile.setParentPath(album.getPath());
-                        //mediaFile.setParentPath(soundFile.getPath());
-                        Date lastModified = new Date(FileUtil.lastModified(soundFile));
-                        MediaFile existingFile = mediaFileDao.getMediaFile(mediaFile.getPath());
-                        mediaFile.setFolder(securityService.getRootFolderForFile(soundFile));
-                        mediaFile.setChanged(lastModified);
-                        mediaFile.setLastScanned(new Date());
-                        mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
-                        mediaFile.setLastPlayed(existingFile == null ? null : existingFile.getLastPlayed());
-                        mediaFile.setComment(existingFile == null ? null : existingFile.getComment());
-                        mediaFile.setChildrenLastUpdated(new Date(0));
-                        mediaFile.setCreated(lastModified);
-                        mediaFile.setPresent(true);
-                        mediaFile.setTrackNumber(trackData.getNumber());
 
-                        if (metaData != null) {
-                            mediaFile.setDiscNumber(metaData.getDiscNumber());
-                            mediaFile.setGenre(metaData.getGenre());
-                            mediaFile.setYear(metaData.getYear());
-                            mediaFile.setBitRate(metaData.getBitRate());
-                            mediaFile.setVariableBitRate(metaData.getVariableBitRate());
-                            mediaFile.setHeight(metaData.getHeight());
-                            mediaFile.setWidth(metaData.getWidth());
-                        }
+                    mediaFile.setDurationSeconds(nextStart - currentStart);
+                    mediaFile.setPathForSingleFileMedia(soundFile.getPath(), currentStart, nextStart);
+                    mediaFile.setFileSize((long) ((float) mediaFile.getDurationSeconds() / wholeFileLength * wholeFileSize)); //approximate
 
-                        String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(soundFile.getPath())));
-                        mediaFile.setFormat(format);
-
-                        Position currentPosition = cueSheet.getAllTrackData().get(i).getIndices().get(0).getPosition();
-                        int currentStart = currentPosition.getMinutes() * 60 + currentPosition.getSeconds();
-
-                        int nextStart = 0;
-                        if (cueSheet.getAllTrackData().size() - 1 != i) {
-                            Position nextPosition = cueSheet.getAllTrackData().get(i + 1).getIndices().get(0).getPosition();
-                            nextStart = nextPosition.getMinutes() * 60 + nextPosition.getSeconds();
-                        } else {
-                            nextStart = wholeFileLength;
-                        }
-
-                        mediaFile.setDurationSeconds(nextStart - currentStart);
-                        mediaFile.setPathForSingleFileMedia(soundFile.getPath(), currentStart, nextStart);
-                        mediaFile.setFileSize((long) ((float) mediaFile.getDurationSeconds() / wholeFileLength * wholeFileSize)); //approximate
-
-                        children.add(mediaFile);
-                    }
+                    children.add(mediaFile);
                 }
             }
-            return children;
-        } catch (IOException e) {
-            return Collections.emptyList();
         }
+        return children;
     }
 
     public List<File> filterMediaFiles(File[] candidates) {
@@ -660,10 +655,21 @@ public class MediaFileService {
 
         return mediaFile;
     }
+    
+    private CueSheet parseCueSheet(File cueFile) {
+        try (InputStream fin=new FileInputStream(cueFile)) {
+            String charset = FileUtil.detectCharset(cueFile, textEncodings);
+            return CueParser.parse(new LineNumberReader(new InputStreamReader(fin, charset!=null ? charset : textEncodings[1])));
+        }
+        catch (IOException e) {
+            LOG.warn("Failed to parse cue sheet file "+cueFile, e);
+            return null;
+        }
+    }
 
     private boolean isSingleFileAlbum(File albumDir) {
         for (File cueFile : getCueSheets(albumDir)) {
-            if (getSoundChild(albumDir, cueFile.getPath()) != null) {
+            if (getSoundChild(albumDir, cueFile.getPath(), parseCueSheet(cueFile)) != null) {
                 return true;
             }
         }
@@ -680,13 +686,20 @@ public class MediaFileService {
         return cueFiles;
     }
 
-    private File getSoundChild(File albumDir, String cueFilePath){
+    private File getSoundChild(File albumDir, String cueFilePath, CueSheet cueSheet){
+        if (cueSheet == null)
+            return null;
         List<File> candidates = filterMediaFiles(FileUtil.listFiles(albumDir));
+        String fileName = cueSheet.getFileData().get(0).getFile();
         for (File singleFileSound:candidates){
-            if (FilenameUtils.getBaseName(singleFileSound.getPath()).equals(FilenameUtils.getBaseName(cueFilePath))||
-                    FilenameUtils.getName(singleFileSound.getPath()).equals(FilenameUtils.getBaseName(cueFilePath))) {
+            String soundFileName = FilenameUtils.getName(singleFileSound.getPath());
+            String cueFileBaseName = FilenameUtils.getBaseName(cueFilePath);
+            if (FilenameUtils.getBaseName(singleFileSound.getPath()).equals(cueFileBaseName)||
+                    soundFileName.equals(cueFileBaseName)) {
                 return singleFileSound;
             }
+            if (soundFileName.equals(fileName))
+                return singleFileSound;
         }
         return null;
     }
