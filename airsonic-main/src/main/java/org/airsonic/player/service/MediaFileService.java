@@ -782,7 +782,9 @@ public class MediaFileService {
     private File findCoverArt(File[] candidates) throws IOException {
         for (String mask : settingsService.getCoverArtFileTypesAsArray()) {
             for (File candidate : candidates) {
-                if (candidate.isFile() && candidate.getName().toUpperCase().endsWith(mask.toUpperCase()) && !candidate.getName().startsWith(".")) {
+                String name = candidate.getName();
+                if (candidate.isFile() && FileUtil.isImage(name) 
+                        && name.toUpperCase().contains(mask.toUpperCase()) && !name.startsWith(".")) {
                     return candidate;
                 }
             }

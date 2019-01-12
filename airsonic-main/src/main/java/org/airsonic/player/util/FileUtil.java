@@ -188,4 +188,10 @@ public final class FileUtil {
             return false;
         }
     }
+    
+    public static boolean isImage(String fileName) {
+        String lowName=fileName.toLowerCase();
+        return lowName.endsWith(".jpg") || lowName.endsWith(".png")
+                || lowName.endsWith(".gif") || lowName.endsWith(".jpeg");
+    }
 }
