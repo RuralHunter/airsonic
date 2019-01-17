@@ -783,6 +783,14 @@ public class MediaFileService {
         for (String mask : settingsService.getCoverArtFileTypesAsArray()) {
             for (File candidate : candidates) {
                 String name = candidate.getName();
+                if (candidate.isFile() && FileUtil.isImage(name) && name.equalsIgnoreCase(mask) && !name.startsWith(".")) {
+                    return candidate;
+                }
+            }
+        }
+        for (String mask : settingsService.getCoverArtFileTypesAsArray()) {
+            for (File candidate : candidates) {
+                String name = candidate.getName();
                 if (candidate.isFile() && FileUtil.isImage(name) 
                         && name.toUpperCase().contains(mask.toUpperCase()) && !name.startsWith(".")) {
                     return candidate;
