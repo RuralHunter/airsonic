@@ -299,7 +299,7 @@ public class JaudiotaggerParser extends MetaDataParser {
                 format.equals("m4a") ||
                 format.equals("aac") ||
                 format.equals("ogg") ||
-                format.equals("flac") ||
+                //format.equals("flac") ||
                 format.equals("wav") ||
                 format.equals("mpc") ||
                 format.equals("mp+") ||
