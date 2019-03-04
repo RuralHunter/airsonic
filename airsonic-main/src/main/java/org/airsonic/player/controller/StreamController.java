@@ -91,7 +91,8 @@ public class StreamController  {
         Player player = playerService.getPlayer(request, response, false, true);
         User user = securityService.getUserByName(player.getUsername());
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
+        LOG.debug(request.getRequestURL()+"?"+request.getQueryString());
+        long fileLength=-1;
         try {
 
             if (!(authentication instanceof JWTAuthenticationToken) && !user.isStreamRole()) {
@@ -158,7 +159,7 @@ public class StreamController  {
                 }
 
                 TranscodingService.Parameters parameters = transcodingService.getParameters(file, player, maxBitRate, preferredTargetFormat, null);
-                long fileLength = getFileLength(parameters);
+                fileLength = getFileLength(parameters);
                 boolean isConversion = parameters.isDownsample() || parameters.isTranscode();
                 boolean estimateContentLength = ServletRequestUtils.getBooleanParameter(request, "estimateContentLength", false);
                 boolean isHls = ServletRequestUtils.getBooleanParameter(request, "hls", false);
@@ -218,6 +219,10 @@ public class StreamController  {
                 response.setHeader("icy-url", "https://airsonic.github.io/");
                 out = new ShoutCastOutputStream(out, player.getPlayQueue(), settingsService);
             }
+            
+            LOG.debug("Response Content-Type: {}", response.getContentType());
+            for(String name:response.getHeaderNames())
+                LOG.debug("Response Header: {}={}", name, response.getHeader(name));
 
             final int BUFFER_SIZE = 2048;
             byte[] buf = new byte[BUFFER_SIZE];
@@ -246,20 +251,20 @@ public class StreamController  {
                         }
                     } else {
                         out.write(buf, 0, n);
+                        out.flush();
                     }
                 }
             }
         } catch (ClientAbortException err) {
             LOG.info("org.apache.catalina.connector.ClientAbortException: Connection reset");
-            return;
         } finally {
             if (status != null) {
                 securityService.updateUserByteCounts(user, status.getBytesTransfered(), 0L, 0L);
+                LOG.debug("Estimated total bytes: {}. Actual bytes transfered: {}", fileLength, status.getBytesTransfered());
                 statusService.removeStreamStatus(status);
             }
             IOUtils.closeQuietly(in);
         }
-        return;
     }
 
     private void setContentDuration(HttpServletResponse response, MediaFile file) {
