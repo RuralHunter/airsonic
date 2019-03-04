@@ -46,8 +46,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.awt.*;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -91,7 +90,9 @@ public class StreamController  {
         Player player = playerService.getPlayer(request, response, false, true);
         User user = securityService.getUserByName(player.getUsername());
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
+        LOG.debug(request.getRequestURL()+"?"+request.getQueryString());
+        long fileLength=-1;
+        int streamRead=0;
         try {
 
             if (!(authentication instanceof JWTAuthenticationToken) && !user.isStreamRole()) {
@@ -158,7 +159,7 @@ public class StreamController  {
                 }
 
                 TranscodingService.Parameters parameters = transcodingService.getParameters(file, player, maxBitRate, preferredTargetFormat, null);
-                long fileLength = getFileLength(parameters);
+                fileLength = getFileLength(parameters);
                 boolean isConversion = parameters.isDownsample() || parameters.isTranscode();
                 boolean estimateContentLength = ServletRequestUtils.getBooleanParameter(request, "estimateContentLength", false);
                 boolean isHls = ServletRequestUtils.getBooleanParameter(request, "hls", false);
@@ -245,21 +246,22 @@ public class StreamController  {
                             sendDummy(buf, out);
                         }
                     } else {
+                        streamRead+=n;
                         out.write(buf, 0, n);
                     }
                 }
             }
         } catch (ClientAbortException err) {
             LOG.info("org.apache.catalina.connector.ClientAbortException: Connection reset");
-            return;
+            LOG.debug("Client abort exception:", err);
         } finally {
             if (status != null) {
                 securityService.updateUserByteCounts(user, status.getBytesTransfered(), 0L, 0L);
+                LOG.debug("Estimated total bytes: {}. Actual tream read/write: {}.", fileLength, streamRead);
                 statusService.removeStreamStatus(status);
             }
             IOUtils.closeQuietly(in);
         }
-        return;
     }
 
     private void setContentDuration(HttpServletResponse response, MediaFile file) {
