@@ -219,6 +219,10 @@ public class StreamController  {
                 response.setHeader("icy-url", "https://airsonic.github.io/");
                 out = new ShoutCastOutputStream(out, player.getPlayQueue(), settingsService);
             }
+            
+            LOG.debug("Response Content-Type: {}", response.getContentType());
+            for(String name:response.getHeaderNames())
+                LOG.debug("Response Header: {}={}", name, response.getHeader(name));
 
             final int BUFFER_SIZE = 2048;
             byte[] buf = new byte[BUFFER_SIZE];
@@ -248,6 +252,7 @@ public class StreamController  {
                     } else {
                         streamRead+=n;
                         out.write(buf, 0, n);
+                        out.flush();
                     }
                 }
             }
