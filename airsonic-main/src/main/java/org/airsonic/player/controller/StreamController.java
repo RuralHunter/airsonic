@@ -252,7 +252,6 @@ public class StreamController  {
                     } else {
                         streamRead+=n;
                         out.write(buf, 0, n);
-                        out.flush();
                     }
                 }
             }
