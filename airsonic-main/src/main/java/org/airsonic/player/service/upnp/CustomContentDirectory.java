@@ -37,6 +37,7 @@ import org.fourthline.cling.support.model.DIDLContent;
 import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.SortCriterion;
 import org.seamless.util.MimeType;
+import org.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -45,6 +46,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @version $Id: TagBasedContentDirectory.java 3739 2013-12-03 11:55:01Z sindre_mehus $
  */
 public abstract class CustomContentDirectory extends AbstractContentDirectoryService {
+    private static final Logger LOG=LoggerFactory.getLogger(CustomContentDirectory.class);
 
     protected static final String CONTAINER_ID_ROOT = "0";
 
@@ -79,7 +81,8 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
         String suffix = song.isVideo() ? FilenameUtils.getExtension(song.getPath()) : transcodingService.getSuffix(player, song, null);
         String mimeTypeString = StringUtil.getMimeType(suffix);
         MimeType mimeType = mimeTypeString == null ? null : MimeType.valueOf(mimeTypeString);
-
+        LOG.debug("play={}, song={}, mimeTypeString={}, mimeType={}",player.getId(),
+                song.getFile().getName(),mimeTypeString,mimeType);
         Res res = new Res(mimeType, null, url);
         res.setDuration(formatDuration(song.getDurationSeconds()));
         return res;

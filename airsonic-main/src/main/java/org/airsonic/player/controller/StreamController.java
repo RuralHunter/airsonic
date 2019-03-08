@@ -219,10 +219,6 @@ public class StreamController  {
                 response.setHeader("icy-url", "https://airsonic.github.io/");
                 out = new ShoutCastOutputStream(out, player.getPlayQueue(), settingsService);
             }
-            
-            LOG.debug("Response Content-Type: {}", response.getContentType());
-            for(String name:response.getHeaderNames())
-                LOG.debug("Response Header: {}={}", name, response.getHeader(name));
 
             final int BUFFER_SIZE = 2048;
             byte[] buf = new byte[BUFFER_SIZE];
@@ -257,7 +253,6 @@ public class StreamController  {
             }
         } catch (ClientAbortException err) {
             LOG.info("org.apache.catalina.connector.ClientAbortException: Connection reset");
-            LOG.debug("Client abort exception:", err);
         } finally {
             if (status != null) {
                 securityService.updateUserByteCounts(user, status.getBytesTransfered(), 0L, 0L);
