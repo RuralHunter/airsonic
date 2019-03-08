@@ -29,6 +29,8 @@ import org.airsonic.player.service.TranscodingService;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.fourthline.cling.model.meta.*;
+import org.fourthline.cling.model.profile.*;
 import org.fourthline.cling.support.contentdirectory.AbstractContentDirectoryService;
 import org.fourthline.cling.support.contentdirectory.ContentDirectoryException;
 import org.fourthline.cling.support.contentdirectory.DIDLParser;
@@ -58,12 +60,17 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
     private TranscodingService transcodingService;
     @Autowired
     protected JWTSecurityService jwtSecurityService;
-
+    
+    protected LocalService localService;
+    
     public CustomContentDirectory() {
         super(Lists.newArrayList("*"), Lists.newArrayList());
     }
 
     protected Res createResourceForSong(MediaFile song) {
+        
+        RemoteClientInfo remoteClient=localService.getRemoteClientInfo();
+        LOG.info("remote address: {}", remoteClient);
         Player player = playerService.getGuestPlayer(null);
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getBaseUrl() + "/ext/stream")
@@ -150,5 +157,9 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
 
     public void setJwtSecurityService(JWTSecurityService jwtSecurityService) {
         this.jwtSecurityService = jwtSecurityService;
+    }
+    
+    public void setLocalService(LocalService service) {
+        localService=service;
     }
 }

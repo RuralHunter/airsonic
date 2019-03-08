@@ -157,11 +157,12 @@ public class UPnPService {
 
         Icon icon = new Icon("image/png", 512, 512, 32, "logo-512", getClass().getResourceAsStream("logo-512.png"));
 
-        LocalService<CustomContentDirectory> contentDirectoryservice = new AnnotationLocalServiceBinder().read(CustomContentDirectory.class);
+        LocalService<CustomContentDirectory> contentDirectoryservice = new AnnotationLocalServiceBinder().read(CustomContentDirectory.class);        
         contentDirectoryservice.setManager(new DefaultServiceManager<CustomContentDirectory>(contentDirectoryservice) {
 
             @Override
             protected CustomContentDirectory createServiceInstance() throws Exception {
+                dispatchingContentDirectory.setLocalService(contentDirectoryservice);
                 return dispatchingContentDirectory;
             }
         });
