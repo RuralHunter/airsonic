@@ -29,6 +29,8 @@ import org.airsonic.player.service.TranscodingService;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.fourthline.cling.model.meta.*;
+import org.fourthline.cling.model.profile.*;
 import org.fourthline.cling.support.contentdirectory.AbstractContentDirectoryService;
 import org.fourthline.cling.support.contentdirectory.ContentDirectoryException;
 import org.fourthline.cling.support.contentdirectory.DIDLParser;
@@ -37,6 +39,7 @@ import org.fourthline.cling.support.model.DIDLContent;
 import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.SortCriterion;
 import org.seamless.util.MimeType;
+import org.slf4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -45,6 +48,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @version $Id: TagBasedContentDirectory.java 3739 2013-12-03 11:55:01Z sindre_mehus $
  */
 public abstract class CustomContentDirectory extends AbstractContentDirectoryService {
+    private static final Logger LOG=LoggerFactory.getLogger(CustomContentDirectory.class);
 
     protected static final String CONTAINER_ID_ROOT = "0";
 
@@ -56,12 +60,17 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
     private TranscodingService transcodingService;
     @Autowired
     protected JWTSecurityService jwtSecurityService;
-
+    
+    protected LocalService localService;
+    
     public CustomContentDirectory() {
         super(Lists.newArrayList("*"), Lists.newArrayList());
     }
 
     protected Res createResourceForSong(MediaFile song) {
+        
+        RemoteClientInfo remoteClient=localService.getRemoteClientInfo();
+        LOG.info("remote address: {}", remoteClient);
         Player player = playerService.getGuestPlayer(null);
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getBaseUrl() + "/ext/stream")
@@ -147,5 +156,9 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
 
     public void setJwtSecurityService(JWTSecurityService jwtSecurityService) {
         this.jwtSecurityService = jwtSecurityService;
+    }
+    
+    public void setLocalService(LocalService service) {
+        localService=service;
     }
 }
