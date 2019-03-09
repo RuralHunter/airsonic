@@ -22,6 +22,7 @@ package org.airsonic.player.service.upnp;
 import com.google.common.collect.Lists;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
+import org.airsonic.player.security.*;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SettingsService;
@@ -69,9 +70,16 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
 
     protected Res createResourceForSong(MediaFile song) {
         
-        RemoteClientInfo remoteClient=localService.getRemoteClientInfo();
-        LOG.info("remote address: {}", remoteClient);
-        Player player = playerService.getGuestPlayer(null);
+        Player player = null;
+        RemoteClientInfo client=localService.getRemoteClientInfo();
+        if(client != null) {
+            String ip = client.getRemoteAddress().getHostAddress();
+            String ua = client.getRequestUserAgent();
+            player = playerService.getPlayerByUserAndIp(JWTAuthenticationToken.JWT_PRINCIPLE_NAME, ip);
+            LOG.debug("Client info: ip={}, ua={}, player={}", ip,ua,player == null ? "" : player.getId());
+        }
+        if(player == null)
+            player = playerService.getGuestPlayer(null);
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getBaseUrl() + "/ext/stream")
                 .queryParam("id", song.getId())
@@ -88,10 +96,11 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
         String suffix = song.isVideo() ? FilenameUtils.getExtension(song.getPath()) : transcodingService.getSuffix(player, song, null);
         String mimeTypeString = StringUtil.getMimeType(suffix);
         MimeType mimeType = mimeTypeString == null ? null : MimeType.valueOf(mimeTypeString);
-        LOG.debug("play={}, song={}, mimeTypeString={}, mimeType={}",player.getId(),
-                song.getFile().getName(),mimeTypeString,mimeType);
         Res res = new Res(mimeType, null, url);
-        res.setDuration(formatDuration(song.getDurationSeconds()));
+        String duration = formatDuration(song.getDurationSeconds());
+        res.setDuration(duration);
+        LOG.debug("play={}, song={}, mimeType={}, duration={}", player.getId(),
+                song.getFile().getName(), mimeType, duration);
         return res;
     }
 

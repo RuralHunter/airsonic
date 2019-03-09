@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import java.util.Collection;
 
 public class JWTAuthenticationToken extends AbstractAuthenticationToken {
+    public static final String JWT_PRINCIPLE_NAME = "GERNIC_JWT_PRINICPLE";
     private final String token;
     private String requestedPath;
 
@@ -22,7 +23,7 @@ public class JWTAuthenticationToken extends AbstractAuthenticationToken {
 
     @Override
     public Object getPrincipal() {
-        return "GERNIC_JWT_PRINICPLE";
+        return JWT_PRINCIPLE_NAME;
     }
 
     public String getRequestedPath() {

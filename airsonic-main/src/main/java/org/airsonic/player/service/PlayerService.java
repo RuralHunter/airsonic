@@ -270,10 +270,25 @@ public class PlayerService {
      *
      * @param ip The ip address of the client.
      * @param type The type of the client, or the user agent.
-     * @return All relevant players.
+     * @return The first match player.
      */
-    public Player getPlayersByAddressAndType(String ip, String type) {
+    public Player getPlayerByAddressAndType(String ip, String type) {
         List<Player> players=playerDao.getPlayersByAddressAndType(ip, type);
+        if (!players.isEmpty()) {
+            return players.get(0);
+        }
+        return null;
+    }
+    
+    /**
+     * Returns all players owned by the given user name and ip.
+     *
+     * @param user The user name.
+     * @param ip The ip address of the client.
+     * @return The first match player.
+     */
+    public Player getPlayerByUserAndIp(String user, String ip) {
+        List<Player> players=playerDao.getPlayersByUserAndIp(user, ip);
         if (!players.isEmpty()) {
             return players.get(0);
         }

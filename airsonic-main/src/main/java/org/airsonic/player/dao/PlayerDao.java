@@ -91,6 +91,18 @@ public class PlayerDao extends AbstractDao {
     }
 
     /**
+     * Returns all players owned by the given user name and ip.
+     *
+     * @param user The user name.
+     * @param ip The ip address of the client.
+     * @return All relevant players.
+     */
+    public List<Player> getPlayersByUserAndIp(String user, String ip) {
+        String sql = "select " + QUERY_COLUMNS + " from player where username=? and ip_address=?";
+        return query(sql, rowMapper, user, ip);
+    }
+
+    /**
      * Returns the player with the given ID.
      *
      * @param id The unique player ID.
