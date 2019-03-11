@@ -56,7 +56,7 @@ public class JWTRequestParameterProcessingFilter implements Filter {
             ServletException {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
-
+        logger.debug("{} {}?{}", request.getMethod(), request.getRequestURL(), request.getQueryString());
         if(!findToken(request).isPresent()) {
             chain.doFilter(req, resp);
             return;
