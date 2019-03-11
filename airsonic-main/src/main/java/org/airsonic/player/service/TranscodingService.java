@@ -362,6 +362,9 @@ public class TranscodingService {
                     cmd = cmd.replace("%to", "" + mediaFile.getDurationSeconds());
                 }
             }
+            if (cmd.contains("%tt")) {
+                cmd = cmd.replace("%tt", "" + mediaFile.getDurationSeconds());
+            }
 
             if (cmd.contains("%b")) {
                 cmd = cmd.replace("%b", String.valueOf(maxBitRate));
