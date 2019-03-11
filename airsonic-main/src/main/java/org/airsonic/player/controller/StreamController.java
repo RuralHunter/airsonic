@@ -90,7 +90,7 @@ public class StreamController  {
         Player player = playerService.getPlayer(request, response, false, true);
         User user = securityService.getUserByName(player.getUsername());
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        LOG.debug(request.getRequestURL()+"?"+request.getQueryString());
+        
         long fileLength=-1;
         int streamRead=0;
         try {
