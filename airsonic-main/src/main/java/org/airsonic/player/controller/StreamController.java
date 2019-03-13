@@ -85,6 +85,7 @@ public class StreamController  {
     @RequestMapping(method = RequestMethod.GET)
     public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
+        LOG.debug("Stream URL: {}?{}", request.getRequestURL(), request.getQueryString());
         TransferStatus status = null;
         PlayQueueInputStream in = null;
         Player player = playerService.getPlayer(request, response, false, true);
