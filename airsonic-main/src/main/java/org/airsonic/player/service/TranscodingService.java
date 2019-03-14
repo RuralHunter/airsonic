@@ -202,6 +202,7 @@ public class TranscodingService {
 
         boolean hls = videoTranscodingSettings != null && videoTranscodingSettings.isHls();
         Transcoding transcoding = getTranscoding(mediaFile, player, preferredTargetFormat, hls);
+        LOG.debug("transcoding={}, maxBitRate={}", transcoding, maxBitRate);
         if (transcoding != null) {
             parameters.setTranscoding(transcoding);
             if (maxBitRate == null) {
@@ -242,12 +243,6 @@ public class TranscodingService {
             }
 
             if (parameters.downsample) {
-                return createDownsampledInputStream(parameters);
-            }
-
-            // (ab)use downsampling to splice single_file media into tracks,
-            if (parameters.getMediaFile().isSingleFile()) {
-                parameters.setMaxBitRate(parameters.getMediaFile().getBitRate());
                 return createDownsampledInputStream(parameters);
             }
 
