@@ -75,7 +75,7 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
         if(client != null) {
             String ip = client.getRemoteAddress().getHostAddress();
             String ua = client.getRequestUserAgent();
-            player = playerService.getPlayerByUserAndIp(JWTAuthenticationToken.JWT_PRINCIPLE_NAME, ip);
+            player = playerService.getPlayerByUserAndIp(JWTAuthenticationToken.USERNAME_ANONYMOUS, ip);
             LOG.debug("Client info: ip={}, ua={}, player={}", ip,ua,player == null ? "" : player.getId());
         }
         if(player == null)

@@ -30,10 +30,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.text.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,7 +41,6 @@ import java.util.regex.Pattern;
  */
 public final class StringUtil {
 
-    public static final String ENCODING_LATIN = "ISO-8859-1";
     public static final String ENCODING_UTF8 = "UTF-8";
     private static final DateFormat ISO_8601_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
@@ -327,7 +323,7 @@ public final class StringUtil {
      * @return Whether a and b are equal, or both null.
      */
     public static boolean isEqual(Object a, Object b) {
-        return a == null ? b == null : a.equals(b);
+        return Objects.equals(a, b);
     }
 
     /**

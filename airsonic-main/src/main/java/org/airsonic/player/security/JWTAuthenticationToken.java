@@ -6,9 +6,11 @@ import org.springframework.security.core.GrantedAuthority;
 import java.util.Collection;
 
 public class JWTAuthenticationToken extends AbstractAuthenticationToken {
-    public static final String JWT_PRINCIPLE_NAME = "GERNIC_JWT_PRINICPLE";
+
     private final String token;
     private String requestedPath;
+
+    public static final String USERNAME_ANONYMOUS = "anonymous";
 
     public JWTAuthenticationToken(Collection<? extends GrantedAuthority> authorities, String token, String requestedPath) {
         super(authorities);
@@ -23,7 +25,7 @@ public class JWTAuthenticationToken extends AbstractAuthenticationToken {
 
     @Override
     public Object getPrincipal() {
-        return JWT_PRINCIPLE_NAME;
+        return USERNAME_ANONYMOUS;
     }
 
     public String getRequestedPath() {

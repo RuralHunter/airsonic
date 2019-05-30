@@ -107,6 +107,7 @@ public class SettingsService {
     private static final String KEY_SONOS_SERVICE_NAME = "SonosServiceName";
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
     private static final String KEY_JWT_KEY = "JWTKey";
+    private static final String KEY_REMEMBER_ME_KEY = "RememberMeKey";
 
     private static final String KEY_SMTP_SERVER = "SmtpServer";
     private static final String KEY_SMTP_ENCRYPTION = "SmtpEncryption";
@@ -606,7 +607,7 @@ public class SettingsService {
      * @param limit The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setDownloadBitrateLimit(long limit) {
-        setProperty(KEY_DOWNLOAD_BITRATE_LIMIT, "" + limit);
+        setProperty(KEY_DOWNLOAD_BITRATE_LIMIT, String.valueOf(limit));
     }
 
     /**
@@ -792,6 +793,27 @@ public class SettingsService {
 
     void setMediaLibraryStatistics(MediaLibraryStatistics statistics) {
         setString(KEY_MEDIA_LIBRARY_STATISTICS, statistics.format());
+    }
+
+    /**
+     * Returns whether we are running in Development mode.
+     *
+     * @return true if we are in Development mode.
+     */
+    public boolean isDevelopmentMode() {
+        return System.getProperty("airsonic.development") != null;
+    }
+
+    /**
+     * Returns the custom 'remember me' key used for generating authentication tokens.
+     *
+     * @return The 'remember me' key.
+     */
+    public String getRememberMeKey() {
+        String key = null;
+        if (StringUtils.isBlank(key)) key = getString(KEY_REMEMBER_ME_KEY, null);
+        if (StringUtils.isBlank(key)) key = System.getProperty("airsonic.rememberMeKey");
+        return key;
     }
 
     /**
