@@ -455,7 +455,7 @@ public class MediaFileService {
                         mediaFile.setAlbumArtist(cueSheet.getPerformer());
                         mediaFile.setAlbumName(cueSheet.getTitle());
                         mediaFile.setTitle(trackData.getTitle());
-                        mediaFile.setArtist(trackData.getPerformer());
+                        mediaFile.setArtist(StringUtils.isBlank(trackData.getPerformer()) ? cueSheet.getPerformer() : trackData.getPerformer());
                         mediaFile.setParentPath(album.getPath());
                         //mediaFile.setParentPath(soundFile.getPath());
                         Date lastModified = new Date(FileUtil.lastModified(soundFile));
