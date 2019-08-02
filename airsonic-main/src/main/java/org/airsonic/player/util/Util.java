@@ -133,7 +133,7 @@ public final class Util {
     public static String getURLForRequest(HttpServletRequest request) {
         String url = request.getRequestURL().toString();
         String queryString = request.getQueryString();
-        if (queryString != null && queryString.length() > 0) url += "?" + queryString;
+        if (queryString != null && !queryString.isEmpty()) url += "?" + queryString;
         return url;
     }
 
