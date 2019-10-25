@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.airsonic.player</groupId>
         <artifactId>airsonic</artifactId>
-        <version>10.4.0-RELEASE</version>
+        <version>10.4.1-RELEASE</version>
     </parent>
 
     <properties>
@@ -424,6 +424,7 @@
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
+            <version>1.9.4</version>
             <!-- commons-configuration2 requires during runtime -->
             <scope>runtime</scope>
         </dependency>
