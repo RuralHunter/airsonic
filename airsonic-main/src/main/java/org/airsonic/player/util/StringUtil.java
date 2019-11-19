@@ -20,7 +20,6 @@
 package org.airsonic.player.util;
 
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
@@ -28,6 +27,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.text.*;
 import java.util.*;
@@ -201,7 +201,7 @@ public final class StringUtil {
         // More than 1 TB?
         if (byteCount >= 1024L * 1024 * 1024 * 1024) {
             NumberFormat teraByteFormat = new DecimalFormat("0.00 TB", new DecimalFormatSymbols(locale));
-            return teraByteFormat.format( byteCount / ((double) 1024 * 1024 * 1024 * 1024));
+            return teraByteFormat.format(byteCount / ((double) 1024 * 1024 * 1024 * 1024));
         }
      
         // More than 1 GB?
@@ -226,19 +226,33 @@ public final class StringUtil {
     }
 
     /**
-     * Formats a duration with minutes and seconds, e.g., "93:45"
+     * Formats a duration with minutes and seconds, e.g., "4:34" or "93:45"
+     */
+    public static String formatDurationMSS(int seconds) {
+        if (seconds < 0) {
+            throw new IllegalArgumentException("seconds must be >= 0");
+        }
+        return String.format("%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    /**
+     * Formats a duration with H:MM:SS, e.g., "1:33:45"
+     */
+    public static String formatDurationHMMSS(int seconds) {
+        int hours = seconds / 3600;
+        seconds -= hours * 3600;
+
+        return String.format("%d:%s%s", hours, seconds < 600 ? "0" : "", formatDurationMSS(seconds));
+    }
+
+    /**
+     * Formats a duration to M:SS or H:MM:SS
      */
     public static String formatDuration(int seconds) {
-        int minutes = seconds / 60;
-        int secs = seconds % 60;
-
-        StringBuilder builder = new StringBuilder(6);
-        builder.append(minutes).append(":");
-        if (secs < 10) {
-            builder.append("0");
+        if (seconds >= 3600) {
+            return formatDurationHMMSS(seconds);
         }
-        builder.append(secs);
-        return builder.toString();
+        return formatDurationMSS(seconds);
     }
 
     /**
@@ -279,10 +293,7 @@ public final class StringUtil {
      * @throws IOException If an I/O error occurs.
      */
     public static String[] readLines(InputStream in) throws IOException {
-        BufferedReader reader = null;
-
-        try {
-            reader = new BufferedReader(new InputStreamReader(in));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
             List<String> result = new ArrayList<String>();
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                 line = line.trim();
@@ -293,8 +304,7 @@ public final class StringUtil {
             return result.toArray(new String[result.size()]);
 
         } finally {
-            IOUtils.closeQuietly(in);
-            IOUtils.closeQuietly(reader);
+            FileUtil.closeQuietly(in);
         }
     }
 
@@ -385,11 +395,7 @@ public final class StringUtil {
             return null;
         }
         byte[] utf8;
-        try {
-            utf8 = s.getBytes(ENCODING_UTF8);
-        } catch (UnsupportedEncodingException x) {
-            throw new RuntimeException(x);
-        }
+        utf8 = s.getBytes(StandardCharsets.UTF_8);
         return String.valueOf(Hex.encodeHex(utf8));
     }
 
@@ -404,7 +410,7 @@ public final class StringUtil {
         if (s == null) {
             return null;
         }
-        return new String(Hex.decodeHex(s.toCharArray()), ENCODING_UTF8);
+        return new String(Hex.decodeHex(s.toCharArray()), StandardCharsets.UTF_8);
     }
 
     /**
@@ -420,7 +426,7 @@ public final class StringUtil {
 
         try {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
-            return new String(Hex.encodeHex(md5.digest(s.getBytes(ENCODING_UTF8))));
+            return new String(Hex.encodeHex(md5.digest(s.getBytes(StandardCharsets.UTF_8))));
         } catch (Exception x) {
             throw new RuntimeException(x.getMessage(), x);
         }

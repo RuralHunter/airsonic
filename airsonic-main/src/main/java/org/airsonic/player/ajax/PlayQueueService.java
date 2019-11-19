@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.ajax;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MediaFileDao;
@@ -29,8 +28,6 @@ import org.airsonic.player.service.*;
 import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.util.StringUtil;
 import org.directwebremoting.WebContextFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.RequestContextUtils;
@@ -82,8 +79,6 @@ public class PlayQueueService {
     private JWTSecurityService jwtSecurityService;
     @Autowired
     private InternetRadioService internetRadioService;
-
-    private static final Logger LOG = LoggerFactory.getLogger(PlayQueueService.class);
 
     /**
      * Returns the play queue for the player of the current user.
@@ -275,13 +270,7 @@ public class PlayQueueService {
         }
 
         // Remove non-present files
-        Iterator<MediaFile> iterator = files.iterator();
-        while (iterator.hasNext()) {
-            MediaFile file = iterator.next();
-            if (!file.isPresent()) {
-                iterator.remove();
-            }
-        }
+        files.removeIf(file -> !file.isPresent());
         Player player = getCurrentPlayer(request, response);
         return doPlay(request, player, files).setStartPlayerAt(0);
     }
@@ -357,12 +346,7 @@ public class PlayQueueService {
         HttpServletResponse response = WebContextFactory.get().getHttpServletResponse();
 
         List<PodcastEpisode> episodes = podcastService.getNewestEpisodes(10);
-        List<MediaFile> files = Lists.transform(episodes, new Function<PodcastEpisode, MediaFile>() {
-            @Override
-            public MediaFile apply(PodcastEpisode episode) {
-                return mediaFileService.getMediaFile(episode.getMediaFileId());
-            }
-        });
+        List<MediaFile> files = Lists.transform(episodes, episode -> mediaFileService.getMediaFile(episode.getMediaFileId()));
 
         String username = securityService.getCurrentUsername(request);
         boolean queueFollowingSongs = settingsService.getUserSettings(username).isQueueFollowingSongs();
@@ -394,7 +378,6 @@ public class PlayQueueService {
         HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
         HttpServletResponse response = WebContextFactory.get().getHttpServletResponse();
         String username = securityService.getCurrentUsername(request);
-        UserSettings userSettings = settingsService.getUserSettings(securityService.getCurrentUsername(request));
 
         MusicFolder selectedMusicFolder = settingsService.getSelectedMusicFolder(username);
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username,
@@ -435,7 +418,7 @@ public class PlayQueueService {
         return doPlay(request, player, songs).setStartPlayerAt(0);
     }
 
-    private PlayQueueInfo doPlay(HttpServletRequest request, Player player, List<MediaFile> files) throws Exception {
+    private PlayQueueInfo doPlay(HttpServletRequest request, Player player, List<MediaFile> files) {
         if (player.isWeb()) {
             mediaFileService.removeVideoFiles(files);
         }
@@ -448,7 +431,7 @@ public class PlayQueueService {
         return convert(request, player, true);
     }
 
-    private PlayQueueInfo doPlayInternetRadio(HttpServletRequest request, Player player, InternetRadio radio) throws Exception {
+    private PlayQueueInfo doPlayInternetRadio(HttpServletRequest request, Player player, InternetRadio radio) {
         internetRadioService.clearInternetRadioSourceCache(radio.getId());
         player.getPlayQueue().clear();
         player.getPlayQueue().setRandomSearchCriteria(null);
@@ -501,7 +484,7 @@ public class PlayQueueService {
     /**
      * TODO This method should be moved to a real PlayQueueService not dedicated to Ajax DWR.
      */
-    public PlayQueue addMediaFilesToPlayQueue(PlayQueue playQueue,int[] ids, Integer index, boolean removeVideoFiles) throws Exception {
+    public PlayQueue addMediaFilesToPlayQueue(PlayQueue playQueue,int[] ids, Integer index, boolean removeVideoFiles) {
         List<MediaFile> files = new ArrayList<MediaFile>(ids.length);
         for (int id : ids) {
             MediaFile ancestor = mediaFileService.getMediaFile(id);
@@ -533,7 +516,7 @@ public class PlayQueueService {
     /**
      * TODO This method should be moved to a real PlayQueueService not dedicated to Ajax DWR.
      */
-    public PlayQueue resetPlayQueue(PlayQueue playQueue,int[] ids, boolean removeVideoFiles) throws Exception {
+    public PlayQueue resetPlayQueue(PlayQueue playQueue,int[] ids, boolean removeVideoFiles) {
         MediaFile currentFile = playQueue.getCurrentFile();
         PlayQueue.Status status = playQueue.getStatus();
 
@@ -670,14 +653,12 @@ public class PlayQueueService {
         return convert(request, player, false);
     }
 
-    private PlayQueueInfo convert(HttpServletRequest request, Player player, boolean serverSidePlaylist) throws Exception {
+    private PlayQueueInfo convert(HttpServletRequest request, Player player, boolean serverSidePlaylist) {
         return convert(request, player, serverSidePlaylist, 0);
     }
 
-    private PlayQueueInfo convert(HttpServletRequest request, Player player, boolean serverSidePlaylist, int offset) throws Exception {
+    private PlayQueueInfo convert(HttpServletRequest request, Player player, boolean serverSidePlaylist, int offset) {
 
-        String url = NetworkService.getBaseUrl(request);
-        Locale locale = RequestContextUtils.getLocale(request);
         PlayQueue playQueue = player.getPlayQueue();
 
         List<PlayQueueInfo.Entry> entries;
@@ -734,7 +715,7 @@ public class PlayQueueService {
         return entries;
     }
 
-    private List<PlayQueueInfo.Entry> convertInternetRadio(HttpServletRequest request, Player player) throws Exception {
+    private List<PlayQueueInfo.Entry> convertInternetRadio(HttpServletRequest request, Player player) {
 
         PlayQueue playQueue = player.getPlayQueue();
         InternetRadio radio = playQueue.getInternetRadio();
@@ -745,7 +726,7 @@ public class PlayQueueService {
         List<PlayQueueInfo.Entry> entries = new ArrayList<>();
         for (InternetRadioSource streamSource: internetRadioService.getInternetRadioSources(radio)) {
             // Fake entry id so that the source can be selected in the UI
-            Integer streamId = -(1+entries.size());
+            int streamId = -(1 + entries.size());
             Integer streamTrackNumber = entries.size();
             String streamUrl = streamSource.getStreamUrl();
             entries.add(new PlayQueueInfo.Entry(

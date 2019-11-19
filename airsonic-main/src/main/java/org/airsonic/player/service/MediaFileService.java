@@ -119,15 +119,6 @@ public class MediaFileService {
         return result;
     }
 
-    private MediaFile checkLastModified(MediaFile mediaFile, boolean useFastCache) {
-        if (useFastCache || (mediaFile.getVersion() >= MediaFileDao.VERSION && mediaFile.getChanged().getTime() >= FileUtil.lastModified(mediaFile.getFile()))) {
-            return mediaFile;
-        }
-        mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
-        return mediaFile;
-    }
-
     /**
      * Returns a media file instance for the given path name. If possible, a cached value is returned.
      *
@@ -158,6 +149,19 @@ public class MediaFileService {
             return null;
         }
         return getMediaFile(mediaFile.getParentPath());
+    }
+
+    private MediaFile checkLastModified(MediaFile mediaFile, boolean useFastCache) {
+        if (useFastCache || (mediaFile.getVersion() >= MediaFileDao.VERSION
+                && !settingsService.isIgnoreFileTimestamps()
+                && mediaFile.getChanged().getTime() >= FileUtil.lastModified(mediaFile.getFile()))) {
+            LOG.debug("Detected unmodified file (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
+            return mediaFile;
+        }
+        LOG.debug("Updating database file from disk (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
+        mediaFile = createMediaFile(mediaFile.getFile());
+        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        return mediaFile;
     }
 
     /**
@@ -194,10 +198,10 @@ public class MediaFileService {
         List<MediaFile> result = new ArrayList<MediaFile>();
         for (MediaFile child : mediaFileDao.getChildrenOf(parent.getPath())) {
             child = checkLastModified(child, useFastCache);
-            if (child.isDirectory() && includeDirectories) {
+            if (child.isDirectory() && includeDirectories && includeMediaFile(child)) {
                 result.add(child);
             }
-            if (child.isFile() && includeFiles) {
+            if (child.isFile() && includeFiles && includeMediaFile(child)) {
                 result.add(child);
             }
         }
@@ -357,13 +361,7 @@ public class MediaFileService {
      * Removes video files from the given list.
      */
     public void removeVideoFiles(List<MediaFile> files) {
-        Iterator<MediaFile> iterator = files.iterator();
-        while (iterator.hasNext()) {
-            MediaFile file = iterator.next();
-            if (file.isVideo()) {
-                iterator.remove();
-            }
-        }
+        files.removeIf(MediaFile::isVideo);
     }
 
     public Date getMediaFileStarredDate(int id, String username) {
@@ -397,16 +395,15 @@ public class MediaFileService {
 
 
         if (parent.getMediaType() == MediaFile.MediaType.ALBUM_SINGLE_FILE) {
-            for (MediaFile child: createSingleFileAlbumChildren(parent)){
+            for (MediaFile child: createSingleFileAlbumChildren(parent)) {
                 if (storedChildrenMap.remove(child.getPath()) == null) {
                     mediaFileDao.createOrUpdateMediaFile(child);
                 }
             }
-        }
 
         // uncomment the 'else' section to hide indexed sound files (i.e. the base
         // files for CUE-sheets from which tracks are added) from the listing
-        //} else {
+        } else {
             List<File> children = filterMediaFiles(FileUtil.listFiles(parent.getFile()));
             for (File child : children) {
                 if (storedChildrenMap.remove(child.getPath()) == null) {
@@ -414,7 +411,7 @@ public class MediaFileService {
                     mediaFileDao.createOrUpdateMediaFile(createMediaFile(child));
                 }
             }
-        //}
+        }
 
         // Delete children that no longer exist on disk.
         for (String path : storedChildrenMap.keySet()) {
@@ -432,7 +429,7 @@ public class MediaFileService {
         List<MediaFile> children = new ArrayList<>();
         for (File cueFile : getCueSheets(album.getFile())) {                
             CueSheet cueSheet = parseCueSheet(cueFile);
-            if(cueSheet == null)
+            if (cueSheet == null)
                 continue;
             File soundFile = getSoundChild(album.getFile(), cueFile.getPath(), cueSheet);
             if (soundFile != null) {
@@ -443,7 +440,7 @@ public class MediaFileService {
                 }
                 long wholeFileSize = FileUtil.length(soundFile);
                 int wholeFileLength = 0; //todo: find sound length without metadata
-                if (metaData != null && metaData.getDurationSeconds() !=null) {
+                if (metaData != null && metaData.getDurationSeconds() != null) {
                     wholeFileLength = metaData.getDurationSeconds();
                 }
                 //CueSheet cueSheet = CueParser.parse(cueFile);
@@ -501,7 +498,7 @@ public class MediaFileService {
 
                         children.add(mediaFile);
                     }
-                    catch(Exception e) {
+                    catch (Exception e) {
                         LOG.warn("Failed to parse track item.",e);
                     }
                 }
@@ -509,12 +506,23 @@ public class MediaFileService {
         }
         return children;
     }
+    
+    public boolean includeMediaFile(MediaFile candidate) {
+        return includeMediaFile(candidate.getFile());
+    }
+
+    public boolean includeMediaFile(File candidate) {
+        String suffix = FilenameUtils.getExtension(candidate.getName()).toLowerCase();
+        if (!isExcluded(candidate) && (FileUtil.isDirectory(candidate) || isAudioFile(suffix) || isVideoFile(suffix))) {
+            return true;
+        }
+        return false;
+    }
 
     public List<File> filterMediaFiles(File[] candidates) {
         List<File> result = new ArrayList<File>();
         for (File candidate : candidates) {
-            String suffix = FilenameUtils.getExtension(candidate.getName()).toLowerCase();
-            if (!isExcluded(candidate) && (FileUtil.isDirectory(candidate) || isAudioFile(suffix) || isVideoFile(suffix))) {
+            if (includeMediaFile(candidate)) {
                 result.add(candidate);
             }
         }
@@ -557,7 +565,7 @@ public class MediaFileService {
         }
 
         // Exclude all hidden files starting with a single "." or "@eaDir" (thumbnail dir created on Synology devices).
-        return (name.startsWith(".") && !name.startsWith("..")) || name.startsWith("@eaDir") || name.equals("Thumbs.db");
+        return (name.startsWith(".") && !name.startsWith("..")) || name.startsWith("@eaDir") || "Thumbs.db".equals(name);
     }
 
     private MediaFile createMediaFile(File file) {
@@ -632,20 +640,16 @@ public class MediaFileService {
                     }
 
                     // Look for cover art.
-                    try {
-                        File coverArt = findCoverArt(children);
-                        if (coverArt != null) {
-                            mediaFile.setCoverArtPath(coverArt.getPath());
-                        }
-                    } catch (IOException x) {
-                        LOG.error("Failed to find cover art.", x);
+                    File coverArt = findCoverArt(children);
+                    if (coverArt != null) {
+                        mediaFile.setCoverArtPath(coverArt.getPath());
                     }
 
                 } else {
                     mediaFile.setArtist(file.getName());
                 }
 
-                if (isSingleFileAlbum(file)){
+                if (isSingleFileAlbum(file)) {
                     mediaFile.setMediaType(MediaFile.MediaType.ALBUM_SINGLE_FILE);
                 }
             }
@@ -655,12 +659,12 @@ public class MediaFileService {
     }
     
     private CueSheet parseCueSheet(File cueFile) {
-        try (InputStream fin=new FileInputStream(cueFile)) {
+        try (InputStream fin = new FileInputStream(cueFile)) {
             String charset = FileUtil.detectCharset(cueFile, textEncodings);
-            return CueParser.parse(new LineNumberReader(new InputStreamReader(fin, charset!=null ? charset : textEncodings[1])));
+            return CueParser.parse(new LineNumberReader(new InputStreamReader(fin, charset != null ? charset : textEncodings[1])));
         }
         catch (IOException e) {
-            LOG.warn("Failed to parse cue sheet file "+cueFile, e);
+            LOG.warn("Failed to parse cue sheet file " + cueFile, e);
             return null;
         }
     }
@@ -674,27 +678,27 @@ public class MediaFileService {
         return false;
     }
 
-    private List<File> getCueSheets(File albumDir){
+    private List<File> getCueSheets(File albumDir) {
         List<File> cueFiles = new ArrayList<>();
-        for (File child:FileUtil.listFiles(albumDir)){
-            if (isCueSheet(child)){
+        for (File child:FileUtil.listFiles(albumDir)) {
+            if (isCueSheet(child)) {
                 cueFiles.add(child);
             }
         }
         return cueFiles;
     }
 
-    private File getSoundChild(File albumDir, String cueFilePath, CueSheet cueSheet){
+    private File getSoundChild(File albumDir, String cueFilePath, CueSheet cueSheet) {
         if (cueSheet == null)
             return null;
         List<File> candidates = filterMediaFiles(FileUtil.listFiles(albumDir));
         String fileName = null;
-        if(cueSheet.getFileData().size()==1) //we only handle cue with one FILE entry, otherwise it's not a single file album
-            fileName=cueSheet.getFileData().get(0).getFile();
-        for (File singleFileSound:candidates){
+        if (cueSheet.getFileData().size() == 1) //we only handle cue with one FILE entry, otherwise it's not a single file album
+            fileName = cueSheet.getFileData().get(0).getFile();
+        for (File singleFileSound:candidates) {
             String soundFileName = FilenameUtils.getName(singleFileSound.getPath());
             String cueFileBaseName = FilenameUtils.getBaseName(cueFilePath);
-            if (FilenameUtils.getBaseName(singleFileSound.getPath()).equals(cueFileBaseName)||
+            if (FilenameUtils.getBaseName(singleFileSound.getPath()).equals(cueFileBaseName) ||
                     soundFileName.equals(cueFileBaseName)) {
                 return singleFileSound;
             }
@@ -704,7 +708,7 @@ public class MediaFileService {
         return null;
     }
 
-    private boolean isCueSheet(File file){
+    private boolean isCueSheet(File file) {
         return "cue".equalsIgnoreCase(FilenameUtils.getExtension(file.getName()));
     }
 
@@ -772,7 +776,7 @@ public class MediaFileService {
     /**
      * Finds a cover art image for the given directory, by looking for it on the disk.
      */
-    private File findCoverArt(File[] candidates) throws IOException {
+    private File findCoverArt(File[] candidates) {
         for (String mask : settingsService.getCoverArtFileTypesAsArray()) {
             for (File candidate : candidates) {
                 String name = candidate.getName();

@@ -57,8 +57,8 @@ public class ImportPlaylistController {
 
     @PostMapping
     protected String handlePost(RedirectAttributes redirectAttributes,
-                                           HttpServletRequest request
-                                           ) throws Exception {
+                                HttpServletRequest request
+    ) {
         Map<String, Object> map = new HashMap<String, Object>();
 
         try {
@@ -76,10 +76,9 @@ public class ImportPlaylistController {
                         }
                         String playlistName = FilenameUtils.getBaseName(item.getName());
                         String fileName = FilenameUtils.getName(item.getName());
-                        String format = StringUtils.lowerCase(FilenameUtils.getExtension(item.getName()));
                         String username = securityService.getCurrentUsername(request);
                         Playlist playlist = playlistService.importPlaylist(username, playlistName, fileName,
-                                                                           item.getInputStream(), null);
+                                item.getInputStream(), null);
                         map.put("playlist", playlist);
                     }
                 }

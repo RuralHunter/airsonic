@@ -4,12 +4,6 @@ package org.airsonic.player.service.search;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.domain.Album;
@@ -22,12 +16,16 @@ import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.SearchService;
-import org.airsonic.player.service.search.IndexType;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.subsonic.restapi.ArtistID3;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class SearchServiceTestCase extends AbstractAirsonicHomeTest {
 
@@ -43,7 +41,7 @@ public class SearchServiceTestCase extends AbstractAirsonicHomeTest {
     private SearchService searchService;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         populateDatabaseOnlyOnce();
     }
 
@@ -164,7 +162,12 @@ public class SearchServiceTestCase extends AbstractAirsonicHomeTest {
                 artistId3Result.getItems().size());
         ParamSearchResult<Artist> artistResult = searchService.searchByName(query, 0,
                 Integer.MAX_VALUE, allMusicFolders, Artist.class);
-        Assert.assertEquals("(21) Specify '" + query + "' as the name, and get an artist.", 0,
+
+        /*
+         * // XXX 3.x -> 8.x :
+         * Hit 'Nash*' as ​​the slash becomes a delimiter.
+         */
+        Assert.assertEquals("(21) Specify '" + query + "' as the name, and get an artist.", 1,
                 artistResult.getItems().size());
 
         // *** testGetRandomSongs() ***
@@ -232,7 +235,7 @@ public class SearchServiceTestCase extends AbstractAirsonicHomeTest {
         /*
          * Acquisition of maximum number(5).
          */
-        List<Album> allAlbums = albumDao.getAlphabeticalAlbums(0, 0, true, true, allMusicFolders);
+        List<Album> allAlbums = albumDao.getAlphabeticalAlbums(0, Integer.MAX_VALUE, true, true, allMusicFolders);
         Assert.assertEquals("(26) Get all albums with Dao.", 5, allAlbums.size());
         List<MediaFile> allRandomAlbums = searchService.getRandomAlbums(Integer.MAX_VALUE,
                 allMusicFolders);

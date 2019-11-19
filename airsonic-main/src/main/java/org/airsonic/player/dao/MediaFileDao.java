@@ -42,7 +42,7 @@ import java.util.*;
  */
 @Repository
 public class MediaFileDao extends AbstractDao {
-    private static final Logger logger = LoggerFactory.getLogger(MediaFileDao.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MediaFileDao.class);
     private static final String INSERT_COLUMNS = "path, folder, type, format, title, album, artist, album_artist, disc_number, " +
                                                 "track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, " +
                                                 "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, " +
@@ -95,13 +95,15 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public List<MediaFile> getSongsForAlbum(final String artist, final String album) {
-        Map<String, Object> args = new HashMap<String, Object>() {{
-            put("types", MediaFile.MediaType.audioTypes());
-            put("artist", artist);
-            put("album", album);
-        }};
-        return namedQuery("select " + QUERY_COLUMNS + " from media_file where album_artist = :artist and album = :album and present " +
-                          "and type in (:types) order by disc_number, track_number", rowMapper, args);
+        Map<String, Object> args = new HashMap<String, Object>() {
+            {
+                put("types", MediaFile.MediaType.audioTypes());
+                put("artist", artist);
+                put("album", album);
+            }
+        };
+        return namedQuery("select " + QUERY_COLUMNS + " from media_file where album_artist = :artist and album = :album and present "
+                + "and type in (:types) order by disc_number, track_number", rowMapper, args);
     }
 
     public List<MediaFile> getVideos(final int count, final int offset, final List<MusicFolder> musicFolders) {
@@ -137,7 +139,7 @@ public class MediaFileDao extends AbstractDao {
      */
     @Transactional
     public void createOrUpdateMediaFile(MediaFile file) {
-        logger.trace("Creating/Updating new media file at {}", file.getPath());
+        LOG.trace("Creating/Updating new media file at {}", file.getPath());
         String sql = "update media_file set " +
                      "folder=?," +
                      "type=?," +
@@ -169,7 +171,7 @@ public class MediaFileDao extends AbstractDao {
                      "mb_release_id=? " +
                      "where path=?";
 
-        logger.trace("Updating media file {}", Util.debugObject(file));
+        LOG.trace("Updating media file {}", Util.debugObject(file));
 
         int n = update(sql,
                        file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
@@ -392,15 +394,17 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public List<MediaFile> getSongsByArtist(final String artist, final int offset, final int count) {
-        Map<String, Object> args = new HashMap<String, Object>() {{
-            put("types", MediaFile.MediaType.audioTypes());
-            put("artist", artist);
-            put("count", count);
-            put("offset", offset);
-        }};
-        return namedQuery("select " + QUERY_COLUMNS + " from media_file where type in (:types) and artist = :artist " +
-                          "and present limit :count offset :offset",
-                          rowMapper, args);
+        Map<String, Object> args = new HashMap<String, Object>() {
+            {
+                put("types", MediaFile.MediaType.audioTypes());
+                put("artist", artist);
+                put("count", count);
+                put("offset", offset);
+            }
+        };
+        return namedQuery("select " + QUERY_COLUMNS + " from media_file where type in (:types) and artist = :artist "
+                + "and present limit :count offset :offset",
+                rowMapper, args);
     }
 
     public MediaFile getSongByArtistAndTitle(final String artist, final String title, final List<MusicFolder> musicFolders) {
@@ -413,7 +417,7 @@ public class MediaFileDao extends AbstractDao {
         args.put("types", MediaFile.MediaType.musicTypes());
         args.put("folders", MusicFolder.toPathList(musicFolders));
         return namedQueryOne("select " + QUERY_COLUMNS + " from media_file where artist = :artist " +
-                             "and title = :title and type in (:types) and present and folder in (:folders)" ,
+                             "and title = :title and type in (:types) and present and folder in (:folders)",
                              rowMapper, args);
     }
 
@@ -656,19 +660,36 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public void markPresent(String path, Date lastScanned) {
-        update("update media_file set present=?, last_scanned=? where path=?", true, lastScanned, path);
+        update("update media_file set present=?, last_scanned = ? where path=?", true, lastScanned, path);
     }
 
     public void markNonPresent(Date lastScanned) {
-        int minId = queryForInt("select min(id) from media_file where last_scanned != ? and present", 0, lastScanned);
-        int maxId = queryForInt("select max(id) from media_file where last_scanned != ? and present", 0, lastScanned);
+        int minId = queryForInt("select min(id) from media_file where last_scanned < ? and present", 0, lastScanned);
+        int maxId = queryForInt("select max(id) from media_file where last_scanned < ? and present", 0, lastScanned);
 
         final int batchSize = 1000;
         Date childrenLastUpdated = new Date(0L);  // Used to force a children rescan if file is later resurrected.
         for (int id = minId; id <= maxId; id += batchSize) {
-            update("update media_file set present=false, children_last_updated=? where id between ? and ? and last_scanned != ? and present",
+            update("update media_file set present=false, children_last_updated=? where id between ? and ? and " +
+                            "last_scanned < ? and present",
                    childrenLastUpdated, id, id + batchSize, lastScanned);
         }
+    }
+
+    public List<Integer> getArtistExpungeCandidates() {
+        return queryForInts("select id from media_file where media_file.type = ? and not present",
+                MediaFile.MediaType.DIRECTORY.name());
+    }
+
+    public List<Integer> getAlbumExpungeCandidates() {
+        return queryForInts("select id from media_file where media_file.type = ? and not present",
+                MediaFile.MediaType.ALBUM.name());
+    }
+
+    public List<Integer> getSongExpungeCandidates() {
+        return queryForInts("select id from media_file where media_file.type in (?,?,?,?) and not present",
+                MediaFile.MediaType.MUSIC.name(), MediaFile.MediaType.PODCAST.name(),
+                MediaFile.MediaType.AUDIOBOOK.name(), MediaFile.MediaType.VIDEO.name());
     }
 
     public void expunge() {

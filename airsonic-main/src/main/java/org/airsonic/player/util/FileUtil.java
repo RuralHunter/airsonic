@@ -141,13 +141,7 @@ public final class FileUtil {
     }
 
     private static <T> T timed(FileTask<T> task) {
-//        long t0 = System.nanoTime();
-//        try {
-            return task.execute();
-//        } finally {
-//            long t1 = System.nanoTime();
-//            LOG.debug((t1 - t0) / 1000L + " microsec, " + task);
-//        }
+        return task.execute();
     }
 
     private abstract static class FileTask<T> {
@@ -170,7 +164,7 @@ public final class FileUtil {
     
     public static String detectCharset(File f, String[] charsets) {
         for (String charsetName : charsets) {
-            if(canDecode(f, charsetName))
+            if (canDecode(f, charsetName))
                 return charsetName;
         }
         return null;
@@ -178,9 +172,9 @@ public final class FileUtil {
 
     private static boolean canDecode(File f, String charsetName) {
         try {
-            Charset charset=Charset.forName(charsetName);
-            byte[] buffer=FileUtils.readFileToByteArray(f);
-            CharsetDecoder decoder=charset.newDecoder();
+            Charset charset = Charset.forName(charsetName);
+            byte[] buffer = FileUtils.readFileToByteArray(f);
+            CharsetDecoder decoder = charset.newDecoder();
             decoder.reset();
             decoder.decode(ByteBuffer.wrap(buffer));
             return true;
@@ -190,7 +184,7 @@ public final class FileUtil {
     }
     
     public static boolean isImage(String fileName) {
-        String lowName=fileName.toLowerCase();
+        String lowName = fileName.toLowerCase();
         return lowName.endsWith(".jpg") || lowName.endsWith(".png")
                 || lowName.endsWith(".gif") || lowName.endsWith(".jpeg");
     }

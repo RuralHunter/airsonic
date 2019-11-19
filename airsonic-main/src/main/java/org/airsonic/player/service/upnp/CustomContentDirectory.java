@@ -49,7 +49,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @version $Id: TagBasedContentDirectory.java 3739 2013-12-03 11:55:01Z sindre_mehus $
  */
 public abstract class CustomContentDirectory extends AbstractContentDirectoryService {
-    private static final Logger LOG=LoggerFactory.getLogger(CustomContentDirectory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CustomContentDirectory.class);
 
     protected static final String CONTAINER_ID_ROOT = "0";
 
@@ -71,14 +71,14 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
     protected Res createResourceForSong(MediaFile song) {
         
         Player player = null;
-        RemoteClientInfo client=localService.getRemoteClientInfo();
-        if(client != null) {
+        RemoteClientInfo client = localService.getRemoteClientInfo();
+        if (client != null) {
             String ip = client.getRemoteAddress().getHostAddress();
             String ua = client.getRequestUserAgent();
             player = playerService.getPlayerByUserAndIp(JWTAuthenticationToken.USERNAME_ANONYMOUS, ip);
             LOG.debug("Client info: ip={}, ua={}, player={}", ip,ua,player == null ? "" : player.getId());
         }
-        if(player == null)
+        if (player == null)
             player = playerService.getGuestPlayer(null);
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getBaseUrl() + "/ext/stream")
@@ -108,32 +108,12 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
         if (seconds == null) {
             return null;
         }
-
-        StringBuilder result = new StringBuilder(8);
-
-        int hours = seconds / 3600;
-        seconds -= hours * 3600;
-
-        int minutes = seconds / 60;
-        seconds -= minutes * 60;
-
-        result.append(hours).append(':');
-        if (minutes < 10) {
-            result.append('0');
-        }
-        result.append(minutes).append(':');
-        if (seconds < 10) {
-            result.append('0');
-        }
-        result.append(seconds);
-        result.append(".0");
-
-        return result.toString();
+        return StringUtil.formatDurationHMMSS((int)seconds) + ".0";
     }
 
     protected String getBaseUrl() {
         String dlnaBaseLANURL = settingsService.getDlnaBaseLANURL();
-        if(StringUtils.isBlank(dlnaBaseLANURL)) {
+        if (StringUtils.isBlank(dlnaBaseLANURL)) {
             throw new RuntimeException("DLNA Base LAN URL is not set correctly");
         }
         return dlnaBaseLANURL;
@@ -169,6 +149,6 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
     }
     
     public void setLocalService(LocalService service) {
-        localService=service;
+        localService = service;
     }
 }

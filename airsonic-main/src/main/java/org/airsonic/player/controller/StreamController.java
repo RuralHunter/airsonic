@@ -29,7 +29,6 @@ import org.airsonic.player.service.sonos.SonosHelper;
 import org.airsonic.player.util.HttpRange;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +56,7 @@ import java.util.regex.Pattern;
  * @author Sindre Mehus
  */
 @Controller
-@RequestMapping(value = {"/stream/**", "/ext/stream/**"})
+@RequestMapping({"/stream/**", "/ext/stream/**"})
 public class StreamController {
 
     private static final Logger LOG = LoggerFactory.getLogger(StreamController.class);
@@ -86,13 +85,12 @@ public class StreamController {
 
         LOG.debug("Stream URL: {}?{}", request.getRequestURL(), request.getQueryString());
         TransferStatus status = null;
-        PlayQueueInputStream in = null;
         Player player = playerService.getPlayer(request, response, false, true);
         User user = securityService.getUserByName(player.getUsername());
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         
-        long fileLength=-1;
-        int streamRead=0;
+        long fileLength = -1;
+        int streamRead = 0;
         try {
 
             if (!(authentication instanceof JWTAuthenticationToken) && !user.isStreamRole()) {
@@ -229,10 +227,11 @@ public class StreamController {
 
             status = statusService.createStreamStatus(player);
 
-            in = new PlayQueueInputStream(player, status, maxBitRate, preferredTargetFormat, videoTranscodingSettings,
-                    transcodingService, audioScrobblerService, mediaFileService, searchService);
-
-            try (OutputStream out = makeOutputStream(request, response, range, isSingleFile, player, settingsService)) {
+            try (
+                PlayQueueInputStream in = new PlayQueueInputStream(player, status, maxBitRate, preferredTargetFormat, videoTranscodingSettings,
+                        transcodingService, audioScrobblerService, mediaFileService, searchService);
+                OutputStream out = makeOutputStream(request, response, range, isSingleFile, player, settingsService)
+            ) {
                 final int BUFFER_SIZE = 2048;
                 byte[] buf = new byte[BUFFER_SIZE];
 
@@ -253,7 +252,7 @@ public class StreamController {
                                 sendDummy(buf, out);
                             }
                         } else {
-                            streamRead+=n;
+                            streamRead += n;
                             out.write(buf, 0, n);
                         }
                     }
@@ -264,9 +263,7 @@ public class StreamController {
             // This happens often and outside of the control of the server, so
             // we catch Tomcat/Jetty "connection aborted by client" exceptions
             // and display a short error message.
-            boolean shouldCatch = false;
-            shouldCatch |= Util.isInstanceOfClassName(e, "org.apache.catalina.connector.ClientAbortException");
-            shouldCatch |= Util.isInstanceOfClassName(e, "org.eclipse.jetty.io.EofException");
+            boolean shouldCatch = Util.isInstanceOfClassName(e, "org.apache.catalina.connector.ClientAbortException");
             if (shouldCatch) {
                 LOG.info("{}: Client unexpectedly closed connection while loading {} ({})",
                         request.getRemoteAddr(),
@@ -284,7 +281,6 @@ public class StreamController {
                 LOG.debug("Estimated total bytes: {}. Actual tream read/write: {}.", fileLength, streamRead);
                 statusService.removeStreamStatus(status);
             }
-            IOUtils.closeQuietly(in);
         }
     }
 

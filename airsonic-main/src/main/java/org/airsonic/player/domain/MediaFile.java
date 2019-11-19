@@ -22,6 +22,7 @@ package org.airsonic.player.domain;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -292,31 +293,8 @@ public class MediaFile {
         if (durationSeconds == null) {
             return null;
         }
-
-        StringBuilder result = new StringBuilder(8);
-
-        int seconds = durationSeconds;
-
-        int hours = seconds / 3600;
-        seconds -= hours * 3600;
-
-        int minutes = seconds / 60;
-        seconds -= minutes * 60;
-
-        if (hours > 0) {
-            result.append(hours).append(':');
-            if (minutes < 10) {
-                result.append('0');
-            }
-        }
-
-        result.append(minutes).append(':');
-        if (seconds < 10) {
-            result.append('0');
-        }
-        result.append(seconds);
-
-        return result.toString();
+        // Return in M:SS or H:MM:SS
+        return StringUtil.formatDuration(durationSeconds);
     }
 
     public Long getFileSize() {
@@ -476,42 +454,37 @@ public class MediaFile {
     }
 
     public static Function<MediaFile, Integer> toId() {
-        return new Function<MediaFile, Integer>() {
-            @Override
-            public Integer apply(MediaFile from) {
-                return from.getId();
-            }
-        };
+        return from -> from.getId();
     }
 
     public void setPathForSingleFileMedia(String mediaFilePath, int songStart, int songEnd) {
         setPath(mediaFilePath + ":" + songStart + ":" + songEnd);
     }
 
-    public String getSingleFileAlbumSongBegin(){
+    public String getSingleFileAlbumSongBegin() {
         try {
             String[] parts = path.split(":");
-            return parts[parts.length-2];
+            return parts[parts.length - 2];
         } catch (ArrayIndexOutOfBoundsException e) {
             // ignore
             return null;
         }
     }
 
-    public String getSingleFileAlbumSongEnd(){
+    public String getSingleFileAlbumSongEnd() {
         try {
             String[] parts = path.split(":");
-            return parts[parts.length-1];
+            return parts[parts.length - 1];
         } catch (ArrayIndexOutOfBoundsException e) {
             // ignore
             return null;
         }
     }
 
-    public String getSingleFileAlbumSongWholePath(){
+    public String getSingleFileAlbumSongWholePath() {
         try {
             String[] parts = path.split(":");
-            return parts[parts.length-3];
+            return parts[parts.length - 3];
         } catch (ArrayIndexOutOfBoundsException e) {
             // normal file
             return path;

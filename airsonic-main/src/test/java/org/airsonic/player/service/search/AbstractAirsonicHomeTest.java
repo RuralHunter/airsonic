@@ -1,9 +1,5 @@
 package org.airsonic.player.service.search;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-
 import org.airsonic.player.TestCaseUtils;
 import org.airsonic.player.dao.DaoHelper;
 import org.airsonic.player.dao.MusicFolderDao;
@@ -23,13 +19,17 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+
 @ContextConfiguration(locations = {
         "/applicationContext-service.xml",
         "/applicationContext-cache.xml",
         "/applicationContext-testdb.xml"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Component
-/**
+/*
  * Abstract class for scanning MusicFolder.
  */
 public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {

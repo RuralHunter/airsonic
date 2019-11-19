@@ -34,7 +34,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 
 /**
@@ -45,7 +44,7 @@ import java.util.Arrays;
 @Service
 public class DispatchingContentDirectory extends CustomContentDirectory {
 
-    public static final Logger LOG = LoggerFactory.getLogger(DispatchingContentDirectory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DispatchingContentDirectory.class);
 
     public static final String CONTAINER_ID_ROOT = "0";
     public static final String CONTAINER_ID_PLAYLIST_PREFIX = "playlist";
@@ -137,7 +136,7 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
         LOG.debug("UPnP search request - containerId: " + containerId + ", searchCriteria: " + searchCriteria 
                 + ", filter: " + filter + ", firstResult: " + firstResult + ", maxResults: " + maxResults);
         //Some clients just do search instead of browse such as rhythmbox.
-        if(!searchCriteria.contains("dc:title"))
+        if (!searchCriteria.contains("dc:title"))
             return browse(containerId, BrowseFlag.DIRECT_CHILDREN, filter, firstResult, maxResults, orderBy);
         
         // i don't see a parser for upnp search criteria anywhere, so this will
@@ -158,26 +157,26 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
 
 
     private UpnpContentProcessor findProcessor(String type) {
-        switch(type) {
-        case CONTAINER_ID_ROOT:
-            return getRootProcessor();
-        case CONTAINER_ID_PLAYLIST_PREFIX:
-            return getPlaylistProcessor();
-        case CONTAINER_ID_FOLDER_PREFIX:
-            return getMediaFileProcessor();
-        case CONTAINER_ID_ALBUM_PREFIX:
-            return getAlbumProcessor();
-        case CONTAINER_ID_RECENT_PREFIX:
-            return getRecentAlbumProcessor();
-        case CONTAINER_ID_ARTIST_PREFIX:
-            return getArtistProcessor();
-        case CONTAINER_ID_GENRE_PREFIX:
-            return getGenreProcessor();
+        switch (type) {
+            case CONTAINER_ID_ROOT:
+                return getRootProcessor();
+            case CONTAINER_ID_PLAYLIST_PREFIX:
+                return getPlaylistProcessor();
+            case CONTAINER_ID_FOLDER_PREFIX:
+                return getMediaFileProcessor();
+            case CONTAINER_ID_ALBUM_PREFIX:
+                return getAlbumProcessor();
+            case CONTAINER_ID_RECENT_PREFIX:
+                return getRecentAlbumProcessor();
+            case CONTAINER_ID_ARTIST_PREFIX:
+                return getArtistProcessor();
+            case CONTAINER_ID_GENRE_PREFIX:
+                return getGenreProcessor();
         }
         return null;
     }
 
-    public Item createItem(MediaFile song) throws Exception {
+    public Item createItem(MediaFile song) {
         MediaFile parent = mediaFileService.getParentOf(song);
         MusicTrack item = new MusicTrack();
         item.setId(String.valueOf(song.getId()));
@@ -202,7 +201,7 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
         return item;
     }
 
-    public URI getAlbumArtUrl(int id) throws URISyntaxException {
+    public URI getAlbumArtUrl(int id) {
         return jwtSecurityService.addJWTToken(UriComponentsBuilder.fromUriString(getBaseUrl() + "/ext/coverArt.view").queryParam("id", id).queryParam("size", CoverArtScheme.LARGE.getSize())).build().encode().toUri();
     }
 

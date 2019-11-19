@@ -274,7 +274,7 @@ public class PlayerService {
      * @return The first match player.
      */
     public Player getPlayerByAddressAndType(String ip, String type) {
-        List<Player> players=playerDao.getPlayersByAddressAndType(ip, type);
+        List<Player> players = playerDao.getPlayersByAddressAndType(ip, type);
         if (!players.isEmpty()) {
             return players.get(0);
         }
@@ -289,7 +289,7 @@ public class PlayerService {
      * @return The first match player.
      */
     public Player getPlayerByUserAndIp(String user, String ip) {
-        List<Player> players=playerDao.getPlayersByUserAndIp(user, ip);
+        List<Player> players = playerDao.getPlayersByUserAndIp(user, ip);
         if (!players.isEmpty()) {
             return players.get(0);
         }
@@ -371,7 +371,7 @@ public class PlayerService {
 
         // Create player if necessary.
         Player player = new Player();
-        if (request != null ) {
+        if (request != null) {
             player.setIpAddress(request.getRemoteAddr());
         }
         player.setUsername(User.USERNAME_GUEST);
