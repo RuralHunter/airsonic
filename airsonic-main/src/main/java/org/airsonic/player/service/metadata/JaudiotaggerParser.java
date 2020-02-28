@@ -369,7 +369,7 @@ public class JaudiotaggerParser extends MetaDataParser {
                "wav".equals(format) ||
                "mpc".equals(format) ||
                "mp+".equals(format) ||
-               "ape".equals(format) ||
+               //"ape".equals(format) ||
                "wma".equals(format);
     }
 
