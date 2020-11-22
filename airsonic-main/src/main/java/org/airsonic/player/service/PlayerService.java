@@ -265,7 +265,7 @@ public class PlayerService {
     public List<Player> getPlayersForUserAndClientId(String username, String clientId) {
         return playerDao.getPlayersForUserAndClientId(username, clientId);
     }
-    
+
     /**
      * Returns all players owned by the given username and client ID.
      *
@@ -280,7 +280,7 @@ public class PlayerService {
         }
         return null;
     }
-    
+
     /**
      * Returns all players owned by the given user name and ip.
      *

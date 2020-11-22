@@ -131,6 +131,8 @@ public class SettingsService {
     private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
     private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
 
+    private static final String KEY_UPNP_PORT = "UPNP_PORT";
+
     // Default values.
     private static final String DEFAULT_JWT_KEY = null;
     private static final String DEFAULT_INDEX_STRING = "A B C D E F G H I J K L M N O P Q R S T U V W X-Z(XYZ)";
@@ -210,6 +212,8 @@ public class SettingsService {
     private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 512;
     private static final String DEFAULT_DATABASE_USERTABLE_QUOTE = null;
 
+    private static final int DEFAULT_UPNP_PORT = 4041;
+
     // Array of obsolete keys.  Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
             "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
@@ -286,6 +290,10 @@ public class SettingsService {
 
     public static String getDefaultJDBCUrl() {
         return "jdbc:hsqldb:file:" + getAirsonicHome().getPath() + "/db/" + getFileSystemAppName();
+    }
+
+    public static int getDefaultUPnPPort() {
+        return Optional.ofNullable(System.getProperty(KEY_UPNP_PORT)).map(x -> Integer.parseInt(x)).orElse(DEFAULT_UPNP_PORT);
     }
 
     public static File getLogFile() {
@@ -877,7 +885,7 @@ public class SettingsService {
                 String[] lines = StringUtil.readLines(in);
 
                 for (String line : lines) {
-                    locales.add(parseLocale(line));
+                    locales.add(StringUtil.parseLocale(line));
                 }
 
             } catch (IOException x) {
@@ -886,21 +894,6 @@ public class SettingsService {
             }
         }
         return locales.toArray(new Locale[locales.size()]);
-    }
-
-    private Locale parseLocale(String line) {
-        String[] s = line.split("_");
-        String language = s[0];
-        String country = "";
-        String variant = "";
-
-        if (s.length > 1) {
-            country = s[1];
-        }
-        if (s.length > 2) {
-            variant = s[2];
-        }
-        return new Locale(language, country, variant);
     }
 
     /**
@@ -1121,9 +1114,10 @@ public class SettingsService {
         settings.setQueueFollowingSongs(true);
         settings.setDefaultAlbumList(AlbumListType.RANDOM);
         settings.setLastFmEnabled(false);
-        settings.setListReloadDelay(60);
+        settings.setListenBrainzEnabled(false);
         settings.setLastFmUsername(null);
         settings.setLastFmPassword(null);
+        settings.setListenBrainzToken(null);
         settings.setChanged(new Date());
         settings.setPaginationSize(40);
 

@@ -75,12 +75,13 @@ public class MediaFile {
     private boolean present;
     private int version;
     private String musicBrainzReleaseId;
+    private String musicBrainzRecordingId;
 
     public MediaFile(int id, String path, String folder, MediaType mediaType, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
                      boolean variableBitRate, Integer durationSeconds, Long fileSize, Integer width, Integer height, String coverArtPath,
                      String parentPath, int playCount, Date lastPlayed, String comment, Date created, Date changed, Date lastScanned,
-                     Date childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId) {
+                     Date childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
         this.id = id;
         this.path = path;
         this.folder = folder;
@@ -112,6 +113,7 @@ public class MediaFile {
         this.present = present;
         this.version = version;
         this.musicBrainzReleaseId = musicBrainzReleaseId;
+        this.musicBrainzRecordingId = musicBrainzRecordingId;
     }
 
     public MediaFile() {
@@ -406,6 +408,14 @@ public class MediaFile {
         this.musicBrainzReleaseId = musicBrainzReleaseId;
     }
 
+    public String getMusicBrainzRecordingId() {
+        return musicBrainzRecordingId;
+    }
+
+    public void setMusicBrainzRecordingId(String musicBrainzRecordingId) {
+        this.musicBrainzRecordingId = musicBrainzRecordingId;
+    }
+
     /**
      * Returns when the children was last updated in the database.
      */
@@ -506,7 +516,7 @@ public class MediaFile {
         private static final List<String> MUSIC_TYPES = Arrays.asList(MUSIC.toString(),MUSIC_SINGLE_FILE.toString());
         private static final List<String> AUDIO_TYPES = Arrays.asList(MUSIC.toString(),MUSIC_SINGLE_FILE.toString(),AUDIOBOOK.toString(),AUDIOBOOK_SINGLE_FILE.toString(),PODCAST.toString());
         private static final List<String> PLAYABLE_TYPES = Arrays.asList(MUSIC.toString(),MUSIC_SINGLE_FILE.toString(),AUDIOBOOK.toString(),AUDIOBOOK_SINGLE_FILE.toString(),PODCAST.toString(),VIDEO.toString());
-        
+
         public static List<String> albumTypes() {
             return ALBUM_TYPES;
         }
@@ -514,7 +524,7 @@ public class MediaFile {
         public static List<String> musicTypes() {
             return MUSIC_TYPES;
         }
-        
+
         public static List<String> audioTypes() {
             return AUDIO_TYPES;
         }

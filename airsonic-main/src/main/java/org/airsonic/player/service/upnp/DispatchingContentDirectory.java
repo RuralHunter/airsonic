@@ -133,12 +133,12 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
                                String searchCriteria, String filter,
                                long firstResult, long maxResults,
                                SortCriterion[] orderBy) throws ContentDirectoryException {
-        LOG.debug("UPnP search request - containerId: " + containerId + ", searchCriteria: " + searchCriteria 
+        LOG.debug("UPnP search request - containerId: " + containerId + ", searchCriteria: " + searchCriteria
                 + ", filter: " + filter + ", firstResult: " + firstResult + ", maxResults: " + maxResults);
         //Some clients just do search instead of browse such as rhythmbox.
         if (!searchCriteria.contains("dc:title"))
             return browse(containerId, BrowseFlag.DIRECT_CHILDREN, filter, firstResult, maxResults, orderBy);
-        
+
         // i don't see a parser for upnp search criteria anywhere, so this will
         // have to do
         String upnpClass = searchCriteria.replaceAll("^.*upnp:class\\s+[\\S]+\\s+\"([\\S]*)\".*$", "$1");

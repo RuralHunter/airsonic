@@ -13,8 +13,8 @@ import org.junit.Test;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
@@ -30,12 +30,8 @@ import static org.junit.Assert.assertEquals;
  * These cases have the purpose of observing the current situation
  * and observing the impact of upgrading Lucene.
  */
-@ContextConfiguration(
-        locations = {
-                "/applicationContext-service.xml",
-                "/applicationContext-cache.xml",
-                "/applicationContext-testdb.xml",
-                "/applicationContext-mockSonos.xml" })
+
+@SpringBootTest
 @DirtiesContext(
     classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class QueryFactoryTestCase {
@@ -69,18 +65,18 @@ public class QueryFactoryTestCase {
 
     private static final MusicFolder MUSIC_FOLDER1 =
             new MusicFolder(FID1, new File(PATH1), "music1", true, new java.util.Date());
-    private static final MusicFolder MUSIC_FOLDER2 = 
+    private static final MusicFolder MUSIC_FOLDER2 =
             new MusicFolder(FID2, new File(PATH2), "music2", true, new java.util.Date());
 
     private static final List<MusicFolder> SINGLE_FOLDERS = Arrays.asList(MUSIC_FOLDER1);
-    private static final List<MusicFolder> MULTI_FOLDERS  = Arrays.asList(MUSIC_FOLDER1, MUSIC_FOLDER2);
+    private static final List<MusicFolder> MULTI_FOLDERS = Arrays.asList(MUSIC_FOLDER1, MUSIC_FOLDER2);
 
 
     /*
      * XXX 3.x -> 8.x :
      * It does not change the basic functional requirements for the query.
      * However, some minor improvements are included.
-     * 
+     *
      *  - Use 'Or' instead of 'SpanOr'.
      *    This is suitable for 8.x document definition and query grammar.
      *    A more rigorous comparison.
@@ -93,7 +89,7 @@ public class QueryFactoryTestCase {
      *    Currently, these are "key" strings, both in the requirements and in the implementation.
      *    The legacy "normalize" is dirty code that compensates for the incomplete analytics implementation
      *    and is not necessary as long as proper key comparison can be done.
-     *    
+     *
      *    => Treating these strictly as keys enables DB reference.
      *       For example, can support multi-genre by creating a new genre field that implements another Tokenizer.
      *
@@ -127,13 +123,13 @@ public class QueryFactoryTestCase {
 
         Query query = queryFactory.search(criteria, SINGLE_FOLDERS, IndexType.ALBUM);
         assertEquals("SearchAlbum",
-                "+((album:abc* artist:abc*) (album:def* artist:def*)) +(folder:" + PATH1
+                "+(((album:abc*)^1.1 artist:abc*) ((album:def*)^1.1 artist:def*)) +(folder:" + PATH1
                         + ")",
                 query.toString());
 
         query = queryFactory.search(criteria, MULTI_FOLDERS, IndexType.ALBUM);
         assertEquals("SearchAlbum",
-                "+((album:abc* artist:abc*) (album:def* artist:def*)) +(folder:" + PATH1
+                "+(((album:abc*)^1.1 artist:abc*) ((album:def*)^1.1 artist:def*)) +(folder:" + PATH1
                         + " folder:" + PATH2 + ")",
                 query.toString());
     }
@@ -147,11 +143,11 @@ public class QueryFactoryTestCase {
 
         Query query = queryFactory.search(criteria, SINGLE_FOLDERS, IndexType.SONG);
         assertEquals("SearchSong",
-                "+((title:abc* artist:abc*) (title:def* artist:def*)) +(folder:" + PATH1 + ")",
+                "+(((title:abc*)^1.1 artist:abc*) ((title:def*)^1.1 artist:def*)) +(folder:" + PATH1 + ")",
                 query.toString());
 
         query = queryFactory.search(criteria, MULTI_FOLDERS, IndexType.SONG);
-        assertEquals("SearchSong", "+((title:abc* artist:abc*) (title:def* artist:def*)) +(folder:" + PATH1
+        assertEquals("SearchSong", "+(((title:abc*)^1.1 artist:abc*) ((title:def*)^1.1 artist:def*)) +(folder:" + PATH1
                 + " folder:" + PATH2 + ")", query.toString());
     }
 
@@ -182,13 +178,13 @@ public class QueryFactoryTestCase {
 
         Query query = queryFactory.search(criteria, SINGLE_FOLDERS, IndexType.ALBUM_ID3);
         assertEquals(
-                "SearchAlbumId3", "+((album:abc* artist:abc*) (album:def* artist:def*)) "
+                "SearchAlbumId3", "+(((album:abc*)^1.1 artist:abc*) ((album:def*)^1.1 artist:def*)) "
                         + "+(folderId:" + FID1 + ")",
                 query.toString());
 
         query = queryFactory.search(criteria, MULTI_FOLDERS, IndexType.ALBUM_ID3);
         assertEquals("SearchAlbumId3",
-                "+((album:abc* artist:abc*) (album:def* artist:def*)) +(folderId:"
+                "+(((album:abc*)^1.1 artist:abc*) ((album:def*)^1.1 artist:def*)) +(folderId:"
                         + FID1 + " folderId:"
                         + FID2 + ")",
                 query.toString());

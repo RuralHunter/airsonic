@@ -161,7 +161,7 @@ public final class FileUtil {
             return name + ", " + file;
         }
     }
-    
+
     public static String detectCharset(File f, String[] charsets) {
         for (String charsetName : charsets) {
             if (canDecode(f, charsetName))
@@ -182,7 +182,7 @@ public final class FileUtil {
             return false;
         }
     }
-    
+
     public static boolean isImage(String fileName) {
         String lowName = fileName.toLowerCase();
         return lowName.endsWith(".jpg") || lowName.endsWith(".png")

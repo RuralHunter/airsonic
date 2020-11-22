@@ -2096,7 +2096,10 @@ public class SubsonicRESTController {
         if (u == null) {
             error(request, response, ErrorCode.NOT_FOUND, "No such user: " + username);
             return;
-        } else if (org.airsonic.player.domain.User.USERNAME_ADMIN.equals(username)) {
+        } else if (user.getUsername().equals(username)) {
+            error(request, response, ErrorCode.NOT_AUTHORIZED, "Not allowed to change own user");
+            return;
+        } else if (securityService.isAdmin(username)) {
             error(request, response, ErrorCode.NOT_AUTHORIZED, "Not allowed to change admin user");
             return;
         }
@@ -2117,7 +2120,10 @@ public class SubsonicRESTController {
         command.setShareRole(getBooleanParameter(request, "shareRole", u.isShareRole()));
 
         int maxBitRate = getIntParameter(request, "maxBitRate", s.getTranscodeScheme().getMaxBitRate());
-        command.setTranscodeSchemeName(TranscodeScheme.fromMaxBitRate(maxBitRate).name());
+        TranscodeScheme transcodeScheme = TranscodeScheme.fromMaxBitRate(maxBitRate);
+        if (transcodeScheme != null) {
+            command.setTranscodeSchemeName(transcodeScheme.name());
+        }
 
         if (hasParameter(request, "password")) {
             command.setPassword(decrypt(getRequiredStringParameter(request, "password")));
@@ -2148,7 +2154,15 @@ public class SubsonicRESTController {
         }
 
         String username = getRequiredStringParameter(request, "username");
-        if (org.airsonic.player.domain.User.USERNAME_ADMIN.equals(username)) {
+        org.airsonic.player.domain.User u = securityService.getUserByName(username);
+
+        if (u == null) {
+            error(request, response, ErrorCode.NOT_FOUND, "No such user: " + username);
+            return;
+        } else if (user.getUsername().equals(username)) {
+            error(request, response, ErrorCode.NOT_AUTHORIZED, "Not allowed to delete own user");
+            return;
+        } else if (securityService.isAdmin(username)) {
             error(request, response, ErrorCode.NOT_AUTHORIZED, "Not allowed to delete admin user");
             return;
         }
@@ -2246,8 +2260,7 @@ public class SubsonicRESTController {
 
     private AlbumInfo getAlbumInfoInternal(AlbumNotes albumNotes) {
         AlbumInfo result = new AlbumInfo();
-        if (albumNotes != null)
-        {
+        if (albumNotes != null) {
             result.setNotes(albumNotes.getNotes());
             result.setMusicBrainzId(albumNotes.getMusicBrainzId());
             result.setLastFmUrl(albumNotes.getLastFmUrl());

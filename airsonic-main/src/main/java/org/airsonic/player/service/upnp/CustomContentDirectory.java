@@ -61,15 +61,14 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
     private TranscodingService transcodingService;
     @Autowired
     protected JWTSecurityService jwtSecurityService;
-    
+
     protected LocalService localService;
-    
+
     public CustomContentDirectory() {
         super(Lists.newArrayList("*"), Lists.newArrayList());
     }
 
     protected Res createResourceForSong(MediaFile song) {
-        
         Player player = null;
         RemoteClientInfo client = localService.getRemoteClientInfo();
         if (client != null) {
@@ -147,7 +146,7 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
     public void setJwtSecurityService(JWTSecurityService jwtSecurityService) {
         this.jwtSecurityService = jwtSecurityService;
     }
-    
+
     public void setLocalService(LocalService service) {
         localService = service;
     }

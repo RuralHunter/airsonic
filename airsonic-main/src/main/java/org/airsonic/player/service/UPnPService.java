@@ -61,10 +61,13 @@ public class UPnPService {
 
     @Autowired
     private SettingsService settingsService;
+
     private UpnpService upnpService;
+
     @Autowired
     @Qualifier("dispatchingContentDirectory")
     private CustomContentDirectory dispatchingContentDirectory;
+
     private AtomicReference<Boolean> running = new AtomicReference<>(false);
 
     @PostConstruct
@@ -112,14 +115,14 @@ public class UPnPService {
         try {
             LOG.info("Starting UPnP service...");
             createService();
-            LOG.info("Starting UPnP service - Done!");
+            LOG.info("Successfully started UPnP service on port {}!", SettingsService.getDefaultUPnPPort());
         } catch (Throwable x) {
             LOG.error("Failed to start UPnP service: " + x, x);
         }
     }
 
     private synchronized void createService() {
-        upnpService = new UpnpServiceImpl(new ApacheUpnpServiceConfiguration());
+        upnpService = new UpnpServiceImpl(new ApacheUpnpServiceConfiguration(SettingsService.getDefaultUPnPPort()));
 
         // Asynch search for other devices (most importantly UPnP-enabled routers for port-mapping)
         upnpService.getControlPoint().search();
@@ -156,7 +159,7 @@ public class UPnPService {
         Icon icon = new Icon("image/png", 512, 512, 32, "logo-512", in);
         FileUtil.closeQuietly(in);
 
-        LocalService<CustomContentDirectory> contentDirectoryservice = new AnnotationLocalServiceBinder().read(CustomContentDirectory.class);        
+        LocalService<CustomContentDirectory> contentDirectoryservice = new AnnotationLocalServiceBinder().read(CustomContentDirectory.class);
         contentDirectoryservice.setManager(new DefaultServiceManager<CustomContentDirectory>(contentDirectoryservice) {
 
             @Override

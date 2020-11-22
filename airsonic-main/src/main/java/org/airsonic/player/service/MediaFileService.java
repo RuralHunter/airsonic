@@ -385,8 +385,8 @@ public class MediaFileService {
         if (parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()) {
             return;
         }
-        
-        LOG.debug("Updating children of {}",parent.getPath());        
+
+        LOG.debug("Updating children of {}",parent.getPath());
         List<MediaFile> storedChildren = mediaFileDao.getChildrenOf(parent.getPath());
         Map<String, MediaFile> storedChildrenMap = new HashMap<String, MediaFile>();
         for (MediaFile child : storedChildren) {
@@ -427,7 +427,7 @@ public class MediaFileService {
     private List<MediaFile> createSingleFileAlbumChildren(MediaFile album) {
         LOG.debug("Creating SingleFileAlbumChildren for {}", album.getPath());
         List<MediaFile> children = new ArrayList<>();
-        for (File cueFile : getCueSheets(album.getFile())) {                
+        for (File cueFile : getCueSheets(album.getFile())) {
             CueSheet cueSheet = parseCueSheet(cueFile);
             if (cueSheet == null)
                 continue;
@@ -497,8 +497,7 @@ public class MediaFileService {
                         mediaFile.setFileSize((long) ((float) mediaFile.getDurationSeconds() / wholeFileLength * wholeFileSize)); //approximate
 
                         children.add(mediaFile);
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         LOG.warn("Failed to parse track item.",e);
                     }
                 }
@@ -506,7 +505,7 @@ public class MediaFileService {
         }
         return children;
     }
-    
+
     public boolean includeMediaFile(MediaFile candidate) {
         return includeMediaFile(candidate.getFile());
     }
@@ -607,6 +606,7 @@ public class MediaFileService {
                 mediaFile.setHeight(metaData.getHeight());
                 mediaFile.setWidth(metaData.getWidth());
                 mediaFile.setMusicBrainzReleaseId(metaData.getMusicBrainzReleaseId());
+                mediaFile.setMusicBrainzRecordingId(metaData.getMusicBrainzRecordingId());
             }
             String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);
@@ -657,13 +657,12 @@ public class MediaFileService {
 
         return mediaFile;
     }
-    
+
     private CueSheet parseCueSheet(File cueFile) {
         try (InputStream fin = new FileInputStream(cueFile)) {
             String charset = FileUtil.detectCharset(cueFile, textEncodings);
             return CueParser.parse(new LineNumberReader(new InputStreamReader(fin, charset != null ? charset : textEncodings[1])));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOG.warn("Failed to parse cue sheet file " + cueFile, e);
             return null;
         }
@@ -788,7 +787,7 @@ public class MediaFileService {
         for (String mask : settingsService.getCoverArtFileTypesAsArray()) {
             for (File candidate : candidates) {
                 String name = candidate.getName();
-                if (candidate.isFile() && FileUtil.isImage(name) 
+                if (candidate.isFile() && FileUtil.isImage(name)
                         && name.toUpperCase().contains(mask.toUpperCase()) && !name.startsWith(".")) {
                     return candidate;
                 }
@@ -798,11 +797,7 @@ public class MediaFileService {
         // Look for embedded images in audiofiles. (Only check first audio file encountered).
         for (File candidate : candidates) {
             if (parser.isApplicable(candidate)) {
-                if (parser.isImageAvailable(getMediaFile(candidate))) {
-                    return candidate;
-                } else {
-                    return null;
-                }
+                return JaudiotaggerParser.getArtwork(getMediaFile(candidate)) != null ? candidate : null;
             }
         }
         return null;
