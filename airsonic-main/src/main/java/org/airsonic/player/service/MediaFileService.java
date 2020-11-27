@@ -382,7 +382,9 @@ public class MediaFileService {
     private void updateChildren(MediaFile parent) {
 
         // Check timestamps.
-        if (parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()) {
+        // Always update directory children since the directory update date is not reliable
+        if (parent.getMediaType() == MediaFile.MediaType.ALBUM_SINGLE_FILE
+                && parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()) {
             return;
         }
 
