@@ -155,7 +155,7 @@ public class MediaFileService {
         if (useFastCache || (mediaFile.getVersion() >= MediaFileDao.VERSION
                 && !settingsService.isIgnoreFileTimestamps()
                 && mediaFile.getChanged().getTime() >= FileUtil.lastModified(mediaFile.getFile()))) {
-            LOG.debug("Detected unmodified file (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
+            LOG.trace("Detected unmodified file (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
             return mediaFile;
         }
         LOG.debug("Updating database file from disk (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
@@ -382,13 +382,14 @@ public class MediaFileService {
     private void updateChildren(MediaFile parent) {
 
         // Check timestamps.
-        // Always update directory children since the directory update date is not reliable
-        if (parent.getMediaType() == MediaFile.MediaType.ALBUM_SINGLE_FILE
+        // Always update directory children since the directory timestamp is not reliable
+        if (parent.getMediaType() != MediaFile.MediaType.DIRECTORY
                 && parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()) {
+            LOG.debug("No change for {}, skip updating.", parent.getPath());
             return;
         }
 
-        LOG.debug("Updating children of {}",parent.getPath());
+        LOG.debug("Updating children of {}, media type: {}", parent.getPath(), parent.getMediaType());
         List<MediaFile> storedChildren = mediaFileDao.getChildrenOf(parent.getPath());
         Map<String, MediaFile> storedChildrenMap = new HashMap<String, MediaFile>();
         for (MediaFile child : storedChildren) {
@@ -431,8 +432,10 @@ public class MediaFileService {
         List<MediaFile> children = new ArrayList<>();
         for (File cueFile : getCueSheets(album.getFile())) {
             CueSheet cueSheet = parseCueSheet(cueFile);
-            if (cueSheet == null)
+            if (cueSheet == null) {
+                LOG.warn("No cue sheet parsed for {}", cueFile.getPath());
                 continue;
+            }
             File soundFile = getSoundChild(album.getFile(), cueFile.getPath(), cueSheet);
             if (soundFile != null) {
                 MetaDataParser parser = metaDataParserFactory.getParser(soundFile);
@@ -445,7 +448,7 @@ public class MediaFileService {
                 if (metaData != null && metaData.getDurationSeconds() != null) {
                     wholeFileLength = metaData.getDurationSeconds();
                 }
-                //CueSheet cueSheet = CueParser.parse(cueFile);
+                LOG.debug("Parsed {} tracks from {}", cueSheet.getAllTrackData().size(), cueFile.getPath());
                 for (int i = 0; i < cueSheet.getAllTrackData().size(); i++) {
                     try {
                         TrackData trackData = cueSheet.getAllTrackData().get(i);
@@ -503,8 +506,11 @@ public class MediaFileService {
                         LOG.warn("Failed to parse track item.",e);
                     }
                 }
+            } else {
+                LOG.warn("No sound file found for {}", cueFile.getPath());
             }
         }
+        LOG.debug("Generated {} children for {}", children.size(), album.getPath());
         return children;
     }
 
