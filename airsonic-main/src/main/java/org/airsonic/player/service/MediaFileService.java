@@ -379,12 +379,30 @@ public class MediaFileService {
         mediaFile.setStarredDate(starredDate);
     }
 
+    /**
+     * Get the latest(max)  modified time of all children
+     * @param parent
+     * @return the latest(max) modified time of all children
+     */
+    private long getChildrenLastModified(File parent) {
+        long lastModify = 0;
+        File[] childrens = FileUtil.listFiles(parent);
+        for (File c : childrens) {
+            if (c.lastModified() > lastModify) {
+                lastModify = c.lastModified();
+            }
+        }
+        return lastModify;
+    }
+
     private void updateChildren(MediaFile parent) {
 
         // Check timestamps.
         // Always update directory children since the directory timestamp is not reliable
-        if (parent.getMediaType() != MediaFile.MediaType.DIRECTORY
-                && parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()) {
+        MediaFile.MediaType parentType = parent.getMediaType();
+        if ((parentType == MediaFile.MediaType.ALBUM || parentType == MediaFile.MediaType.ALBUM_SINGLE_FILE)
+                && parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()
+                && getChildrenLastModified(parent.getFile()) <= parent.getLastScanned().getTime()) {
             LOG.debug("No change for {}, skip updating.", parent.getPath());
             return;
         }
@@ -423,6 +441,7 @@ public class MediaFileService {
 
         // Update timestamp in parent.
         parent.setChildrenLastUpdated(parent.getChanged());
+        parent.setLastScanned(new Date());
         parent.setPresent(true);
         mediaFileDao.createOrUpdateMediaFile(parent);
     }
